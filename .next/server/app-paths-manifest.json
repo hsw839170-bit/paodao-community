@@ -1,0 +1,12 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/runners/register/route": "app/api/runners/register/route.js",
+  "/legal/terms/page": "app/legal/terms/page.js",
+  "/page": "app/page.js",
+  "/leaderboard/page": "app/leaderboard/page.js",
+  "/legal/privacy/page": "app/legal/privacy/page.js",
+  "/register/page": "app/register/page.js",
+  "/legal/disclaimer/page": "app/legal/disclaimer/page.js",
+  "/api/runners/route": "app/api/runners/route.js",
+  "/runner/[id]/page": "app/runner/[id]/page.js"
+}
