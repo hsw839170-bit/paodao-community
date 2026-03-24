@@ -1,7 +1,18 @@
+import Link from 'next/link'
+
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
+        {/* 导航栏 */}
+        <nav className="flex justify-center gap-4 mb-6">
+          <Link href="/" className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition">首页</Link>
+          <Link href="/leaderboard" className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition">排行榜</Link>
+          <Link href="/register" className="px-4 py-2 bg-blue-600 rounded-lg text-white">我要入驻</Link>
+        </nav>
+
+        <Link href="/" className="text-slate-400 hover:text-white mb-6 inline-block">← 返回首页</Link>
+
         <h1 className="text-3xl font-bold mb-8">隐私政策</h1>
 
         <section className="mb-8">

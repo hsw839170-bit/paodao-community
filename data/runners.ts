@@ -9,7 +9,9 @@ export const staticRunners = [
     rating: 4.9,
     orders: 156,
     income: 9360,
-    status: 'active',
+    status: 'online',
+    // 定价：1000W哈夫币的价格
+    pricePer10M: 52, // ¥52/1000W
     createdAt: '2025-03-01'
   },
   {
@@ -22,7 +24,8 @@ export const staticRunners = [
     rating: 4.8,
     orders: 89,
     income: 7120,
-    status: 'active',
+    status: 'online',
+    pricePer10M: 55,
     createdAt: '2025-03-05'
   },
   {
@@ -35,7 +38,13 @@ export const staticRunners = [
     rating: 4.5,
     orders: 23,
     income: 1150,
-    status: 'active',
+    status: 'offline',
+    pricePer10M: 50,
     createdAt: '2025-03-10'
   }
 ]
+
+// 计算预估价格
+export function calculatePrice(harvardCoins: number, pricePer10M: number): number {
+  return Math.round((harvardCoins / 1000) * pricePer10M)
+}

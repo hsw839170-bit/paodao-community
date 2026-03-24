@@ -1,24 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Runner {
-  id          String   @id @default(uuid())
-  name        String
-  avatar      String?
-  contact     String
-  platform    String   // 端游 / 手游 / 两者都可
-  bio         String?
-  verified    Boolean  @default(false)
-  rating      Float    @default(5.0)
-  orders      Int      @default(0)
-  income      Int      @default(0)
-  status      String   @default("active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// 用户基础表（登录用）
+model User {
+  id        String   @id @default(uuid())
+  phone     String   @unique // 手机号登录
+  password  String   // bcrypt 加密
+  role      Role     @default(RUNNER) // BOSS | RUNNER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联跑手资料（只有 role=RUNNER 时才有）
+  runnerProfile RunnerProfile?
+
+  // 关联订单（作为下单用户）
+  orders Order[]
+
+  // 关联评价（作为评价人）
+  reviews Review[]
+}
+
+enum Role {
+  BOSS
+  RUNNER
+  ADMIN // 预留：后续扩展管理员
+}
+
+// 跑手扩展信息表
+model RunnerProfile {
+  id          String     @id @default(uuid())
+  userId      String     @unique
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 基础信息
+  nickname    String     // 昵称
+  avatar      String?    // 头像 URL
+  phone       String     // 联系手机号（可与登录手机号不同）
+
+  // 业务信息
+  platform    Platform   // PC | MOBILE | BOTH
+  bio         String?    // 简介
+  pricePer10M Int        // 每1000万哈夫币价格（元）
+
+  // 状态
+  status      RunnerStatus     @default(OFFLINE) // ONLINE | OFFLINE | BUSY
+  rating      Float      @default(5.0)      // 评分 0-5
+  ordersCount Int        @default(0)         // 完成订单数
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // 关联订单（作为接单跑手）
+  receivedOrders Order[]
+
+  // 关联评价
+  reviews Review[]
+}
+
+enum Platform {
+  PC         // 端游
+  MOBILE     // 手游
+  BOTH       // 两者都可
+}
+
+enum RunnerStatus {
+  ONLINE
+  OFFLINE
+  BUSY
+}
+
+// 订单表
+model Order {
+  id          String      @id @default(uuid())
+
+  // 关联下单用户
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 关联跑手
+  runnerId    String
+  runner      RunnerProfile @relation(fields: [runnerId], references: [id], onDelete: Cascade)
+
+  // 订单状态
+  status      OrderStatus @default(PENDING)
+
+  // 金额（元）
+  amount      Int
+
+  // 游戏相关（可选，后续扩展）
+  gameAmount  Int?        // 游戏币数量（万）
+  note        String?     // 订单备注
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // 关联评价（一个订单只能有一条评价）
+  review Review?
+
+  @@index([userId])
+  @@index([runnerId])
+  @@index([status])
+}
+
+enum OrderStatus {
+  PENDING     // 待接单
+  ACCEPTED    // 已接单
+  COMPLETED   // 已完成
+  CANCELED    // 已取消
+}
+
+// 评价表
+model Review {
+  id          String      @id @default(uuid())
+
+  // 关联订单
+  orderId     String      @unique
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // 关联评价人（BOSS）
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 关联跑手
+  runnerId    String
+  runner      RunnerProfile @relation(fields: [runnerId], references: [id], onDelete: Cascade)
+
+  // 评分 1-5
+  rating      Int
+
+  // 评论内容
+  comment     String?
+
+  createdAt   DateTime    @default(now())
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([runnerId])
 }
