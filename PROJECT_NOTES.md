@@ -221,3 +221,35 @@
 - 2026-03-25 - 进度快照：订单系统完成，在线状态逻辑重构，trailingSlash 修复
 - 2026-03-24 23:05 - 更新看板：SSR 和数据库已完成，新增域名访问问题排查
 - 2026-03-24 22:05 - 重构看板，按 GPT-5.4 建议简化结构
+
+---
+
+## 进度快照 (2026-03-25 17:25)
+
+### 本次变更
+- **分支**: `feature/runner-order-detail-1742892700`, `feature/order-cancel-1742893200`
+- **Commit**: `c61ad138` - feat: runner order detail page (#1)；`e7f31165` - feat: order cancel functionality (#2)
+- **已合并到 main**: `667cc4c2` - Merge branch 'feature/order-cancel-1742893200'
+
+### 完成任务
+- ✅ **#1 跑手端订单详情页**: `/profile/orders/[id]` 新增详情页，支持查看客户信息、订单状态、进度、联系方式、操作按钮（接单/更新进度/完成）、订单轨迹
+- ✅ **#2 订单取消功能**: `PUT /api/orders/[id]/cancel` API，仅 PENDING 状态可取消，支持老板或跑手取消，记录取消日志
+- ✅ **#3 首页统计卡片点击**: StatsCards 组件支持点击筛选（全部/在线/忙碌），桌面端弹窗提示，移动端跳转
+- ✅ **#4 抢单模式 scaffold**: public-orders 页面、抢单 API stub、Prisma schema 新增 OrderMode/PUBLIC 模式
+
+### 关键文件
+- `app/profile/orders/[id]/page.tsx` - 跑手订单详情页（新建）
+- `app/api/orders/[id]/cancel/route.ts` - 取消订单 API（新建）
+- `app/profile/orders/page.tsx` - 订单列表添加点击跳转链接
+- `app/components/StatsCards.tsx` - 统计卡片点击交互
+- `app/public-orders/page.tsx` - 抢单大厅占位页面
+
+### 自测结果
+- `npm run build` 成功（无 TypeScript 错误）
+- `/profile/orders` 点击跳转详情页通过
+- `/api/orders/[id]/cancel` API 权限校验通过（仅 PENDING 可取消）
+
+### 尚待人工配合
+- **数据库迁移**: 已执行 `prisma db push` 同步 schema（PUBLIC 模式字段已添加）
+- **Redis 配置**: 抢单功能需要 `REDIS_URL` 环境变量（仅 #4 scaffold，未实际启用）
+- **短信服务**: 忘记密码功能需要配置 `SMS_API_KEY` 和 `SMS_PROVIDER`（当前为开发模式）
