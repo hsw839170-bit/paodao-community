@@ -321,9 +321,10 @@ export default function MyOrdersPage() {
             </div>
           ) : (
             orders.map((order) => (
-              <div 
-                key={order.id} 
-                className="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition"
+              <Link
+                key={order.id}
+                href={`/my-orders/${order.id}`}
+                className="block bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-blue-500/50 transition cursor-pointer"
               >
                 <div className="flex items-start gap-4 mb-4">
                   {/* 跑手头像 */}
@@ -407,26 +408,17 @@ export default function MyOrdersPage() {
                   </div>
                 ) : order.status === 'COMPLETED' ? (
                   <button
-                    onClick={() => openReviewModal(order)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openReviewModal(order);
+                    }}
                     className="w-full py-2 bg-yellow-600/80 rounded-lg hover:bg-yellow-500 transition"
                   >
                     ⭐ 评价本次服务
                   </button>
                 ) : null}
-                
-                {/* 查看轨迹按钮 */}
-                {(order.status !== 'PENDING' && order.status !== 'CANCELED') && (
-                  <button
-                    onClick={() => fetchOrderLogs(order)}
-                    className="w-full mt-2 py-2 bg-blue-600/80 rounded-lg hover:bg-blue-500 transition flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    查看订单轨迹
-                  </button>
-                )}
-              </div>
+              </Link>
             ))
           )}
         </div>
