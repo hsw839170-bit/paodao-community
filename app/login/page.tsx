@@ -59,8 +59,9 @@ export default function LoginPage() {
 
       // 跳转到个人中心
       router.push('/profile');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '登录失败';
+      setError(message);
     } finally {
       setLoading(false);
     }
