@@ -12,11 +12,17 @@ import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
  * - 未过期（claimDeadline > now 或 claimDeadline is null）
  * 
  * 支持筛选参数:
- * - platform: PC | MOBILE | BOTH
+ * - platform: PC | MOBILE | BOTH（⚠️ 当前未启用，见下方说明）
  * - minPrice: 最低价格
  * - maxPrice: 最高价格
  * - sort: createdAt | amount（排序字段）
  * - order: asc | desc（排序方向）
+ * 
+ * 关于平台筛选的说明:
+ * ------------------
+ * PUBLIC 订单在创建时尚未关联跑手，因此无法按平台筛选。
+ * 如需支持平台筛选，需在下单时新增 platform 字段（方案 A）。
+ * 当前实现：暂不支持按平台筛选 PUBLIC 订单（方案 B）。
  */
 export async function GET(request: NextRequest) {
   try {
