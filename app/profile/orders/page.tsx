@@ -82,6 +82,11 @@ export default function MyOrdersPage() {
     fetchOrders();
   }, [filter]);
 
+  // 查看订单详情
+  const handleViewDetail = (orderId: string) => {
+    router.push(`/profile/orders/${orderId}`);
+  };
+
   const fetchOrders = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -459,7 +464,8 @@ export default function MyOrdersPage() {
             orders.map((order) => (
               <div 
                 key={order.id} 
-                className="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition"
+                onClick={() => handleViewDetail(order.id)}
+                className="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-blue-500/50 transition cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -523,7 +529,7 @@ export default function MyOrdersPage() {
                 )}
 
                 {/* 操作按钮 */}
-                <div className="flex gap-3">
+                <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
                   {order.status === 'PENDING' && (
                     <>
                       <button 
