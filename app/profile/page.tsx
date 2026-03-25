@@ -268,7 +268,7 @@ export default function ProfilePage() {
           <h3 className="font-bold mb-4">在线状态</h3>
           
           <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl mb-4">
-            <div>
+            <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className={`w-3 h-3 rounded-full ${statusConfig.className} ${profile.computedStatus !== 'OFFLINE' ? 'animate-pulse' : ''}`}></span>
                 <span className="font-medium">{statusConfig.text}</span>
@@ -276,29 +276,27 @@ export default function ProfilePage() {
               <p className="text-slate-400 text-sm">{statusConfig.description}</p>
             </div>
             
-            {/* 状态切换按钮 - 只在非 BUSY 时显示 */}
-            {profile.computedStatus !== 'BUSY' ? (
-              <button
-                onClick={toggleStatus}
-                disabled={togglingStatus}
-                className={`px-6 py-2.5 rounded-lg font-medium transition text-sm ${
-                  profile.manualStatus === 'ONLINE'
-                    ? 'bg-red-600 hover:bg-red-500'
-                    : 'bg-green-600 hover:bg-green-500'
-                } disabled:opacity-50`}
-              >
-                {togglingStatus 
-                  ? '处理中...' 
+            {/* 状态切换按钮 - 始终显示，BUSY 时禁用 */}
+            <button
+              onClick={toggleStatus}
+              disabled={togglingStatus || profile.computedStatus === 'BUSY'}
+              className={`px-6 py-2.5 rounded-lg font-medium transition text-sm whitespace-nowrap ml-4 ${
+                profile.computedStatus === 'BUSY'
+                  ? 'bg-yellow-600/50 text-yellow-200 cursor-not-allowed'
+                  : profile.manualStatus === 'ONLINE'
+                  ? 'bg-red-600 hover:bg-red-500 text-white'
+                  : 'bg-green-600 hover:bg-green-500 text-white'
+              } disabled:opacity-70`}
+            >
+              {togglingStatus 
+                ? '处理中...' 
+                : profile.computedStatus === 'BUSY'
+                  ? '忙碌中'
                   : profile.manualStatus === 'ONLINE' 
                     ? '我要下线' 
                     : '我要上线'
-                }
-              </button>
-            ) : (
-              <div className="px-4 py-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-sm">
-                有进行中的订单
-              </div>
-            )}
+              }
+            </button>
           </div>
 
           <div className="text-xs text-slate-500">
