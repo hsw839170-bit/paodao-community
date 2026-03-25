@@ -13,6 +13,12 @@ interface PageProps {
 // 服务端直接查询数据库
 async function getRunner(id: string) {
   try {
+    // 检查数据库连接是否可用
+    if (!process.env.DATABASE_URL) {
+      console.warn('DATABASE_URL not set, using fallback data')
+      return null
+    }
+
     const runner = await prisma.runnerProfile.findUnique({
       where: { id },
       include: {
@@ -54,6 +60,8 @@ async function getRunner(id: string) {
     }
   } catch (error) {
     console.error('Error fetching runner:', error)
+    // 构建时如果数据库不可用，返回 null（显示 404）
+    // 实际运行时会有数据库连接
     return null
   }
 }
