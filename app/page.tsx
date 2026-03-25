@@ -1,8 +1,96 @@
+import { prisma } from '@/lib/prisma'
+import { computeRunnersStatus } from '@/lib/runner-status'
 import { RunnerCard } from '@/components/RunnerCard'
-import { staticRunners } from '@/data/runners'
+import FilterBar from './components/FilterBar'
 
-export default function Home() {
-  const runners = staticRunners
+interface SearchParams {
+  platform?: string
+  minPrice?: string
+  maxPrice?: string
+}
+
+async function getRunners(searchParams: SearchParams) {
+  const { platform, minPrice, maxPrice } = searchParams
+
+  // 构建查询条件
+  const where: any = {
+    status: 'ONLINE'
+  }
+
+  // 平台筛选
+  if (platform && platform !== 'ALL') {
+    where.platform = {
+      in: platform === 'BOTH' ? ['PC', 'MOBILE', 'BOTH'] : [platform, 'BOTH']
+    }
+  }
+
+  // 价格筛选
+  if (minPrice || maxPrice) {
+    where.pricePer10M = {}
+    if (minPrice) {
+      where.pricePer10M.gte = parseInt(minPrice)
+    }
+    if (maxPrice) {
+      where.pricePer10M.lte = parseInt(maxPrice)
+    }
+  }
+
+  // 查询在线跑手
+  const runners = await prisma.runnerProfile.findMany({
+    where,
+    select: {
+      id: true,
+      nickname: true,
+      avatar: true,
+      platform: true,
+      bio: true,
+      pricePer10M: true,
+      status: true,
+      rating: true,
+      ordersCount: true,
+    },
+    orderBy: {
+      ordersCount: 'desc'
+    }
+  })
+
+  // 计算每个跑手的 computedStatus
+  const runnerIds = runners.map(r => r.id)
+  const statusMap = await computeRunnersStatus(runnerIds)
+
+  // 合并 computedStatus 到返回数据
+  return runners.map(runner => ({
+    ...runner,
+    manualStatus: runner.status,
+    computedStatus: statusMap.get(runner.id) || runner.status
+  }))
+}
+
+export default async function Home({
+  searchParams
+}: {
+  searchParams: SearchParams
+}) {
+  const runners = await getRunners(searchParams)
+
+  // 将数据格式转换为 RunnerCard 需要的格式
+  const formatRunnerForCard = (runner: any) => ({
+    id: runner.id,
+    name: runner.nickname,
+    avatar: runner.avatar || undefined,
+    platform: runner.platform === 'PC' ? '端游' : runner.platform === 'MOBILE' ? '手游' : '两者都可',
+    bio: runner.bio || undefined,
+    rating: runner.rating,
+    orders: runner.ordersCount,
+    income: 0,
+    verified: true,
+    computedStatus: runner.computedStatus,
+    pricePer10M: runner.pricePer10M
+  })
+
+  // 统计数量
+  const onlineCount = runners.filter(r => r.computedStatus === 'ONLINE').length
+  const busyCount = runners.filter(r => r.computedStatus === 'BUSY').length
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white">
@@ -14,7 +102,7 @@ export default function Home() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
         
         <div className="container mx-auto px-4 py-16 relative">
-          {/* 导航栏 - 简化：首页 | 排行榜 | 个人中心 */}
+          {/* 导航栏 */}
           <nav className="flex justify-center gap-4 mb-12">
             <a href="/" className="px-6 py-2.5 bg-blue-600 rounded-full text-white font-medium shadow-lg shadow-blue-600/30 transition hover:scale-105">
               首页
@@ -64,12 +152,12 @@ export default function Home() {
               <div className="text-sm text-slate-400">入驻跑手</div>
             </div>
             <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 text-center hover:border-green-500/50 transition">
-              <div className="text-3xl font-bold text-green-400 mb-1">{runners.filter(r => r.verified).length}</div>
-              <div className="text-sm text-slate-400">已认证</div>
+              <div className="text-3xl font-bold text-green-400 mb-1">{onlineCount}</div>
+              <div className="text-sm text-slate-400">在线可接单</div>
             </div>
             <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 text-center hover:border-yellow-500/50 transition">
-              <div className="text-3xl font-bold text-yellow-400 mb-1">{runners.reduce((sum, r) => sum + r.orders, 0)}</div>
-              <div className="text-sm text-slate-400">累计订单</div>
+              <div className="text-3xl font-bold text-yellow-400 mb-1">{busyCount}</div>
+              <div className="text-sm text-slate-400">忙碌中</div>
             </div>
           </div>
         </div>
@@ -82,18 +170,25 @@ export default function Home() {
           <p className="text-slate-400 text-sm">以下跑手当前可接单，点击下单查看联系方式</p>
         </div>
 
+        {/* 筛选栏 - 客户端组件 */}
+        <FilterBar />
+
+        {/* 跑手列表 - 服务端渲染 */}
         <div className="grid gap-6">
-          {runners
-            .filter(runner => runner.status === 'online')
-            .map((runner) => (
-              <RunnerCard key={runner.id} runner={runner} />
-            ))}
+          {runners.map((runner) => (
+            <RunnerCard key={runner.id} runner={formatRunnerForCard(runner)} />
+          ))}
         </div>
         
-        {runners.filter(r => r.status === 'online').length === 0 && (
+        {runners.length === 0 && (
           <div className="text-center py-16 text-slate-500">
-            <p className="text-lg mb-2">暂无可接单的跑手</p>
-            <p>请稍后再来看看 👋</p>
+            <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-lg mb-2">没有找到符合条件的跑手</p>
+            <p className="text-slate-500">试试调整筛选条件 👆</p>
           </div>
         )}
       </section>
@@ -103,9 +198,9 @@ export default function Home() {
         <div className="container mx-auto px-4 py-8 text-center text-slate-400 text-sm">
           <p>© 2025 DeltaRun - 信息展示平台</p>
           <div className="mt-4 space-x-6">
-            <a href="/legal/terms/" className="hover:text-white transition">用户协议</a>
-            <a href="/legal/privacy/" className="hover:text-white transition">隐私政策</a>
-            <a href="/legal/disclaimer/" className="hover:text-white transition">免责声明</a>
+            <a href="/legal/terms" className="hover:text-white transition">用户协议</a>
+            <a href="/legal/privacy" className="hover:text-white transition">隐私政策</a>
+            <a href="/legal/disclaimer" className="hover:text-white transition">免责声明</a>
           </div>
         </div>
       </footer>

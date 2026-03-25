@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { computeRunnerStatus } from '@/lib/runner-status';
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,9 +41,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // 计算 computedStatus
+    const computedStatus = await computeRunnerStatus(profile.id);
+
     return NextResponse.json({
       success: true,
-      profile,
+      profile: {
+        ...profile,
+        manualStatus: profile.status, // 手动设置的状态（ONLINE/OFFLINE）
+        computedStatus, // 计算后的状态（ONLINE/OFFLINE/BUSY）
+      },
     });
   } catch (error) {
     console.error('获取资料失败:', error);

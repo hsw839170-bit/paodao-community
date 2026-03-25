@@ -29,6 +29,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // 获取所有状态的订单数量（用于调试）
+    const allOrdersCount = await prisma.order.count({
+      where: { runnerId: runner.id },
+    });
+
     // 获取订单列表（支持状态筛选）
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -77,6 +82,15 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {});
 
+    // 调试信息
+    const debug = {
+      runnerId: runner.id,
+      userId: payload.userId,
+      totalOrdersInDB: allOrdersCount,
+      filteredOrders: orders.length,
+      queryStatus: status || 'ALL',
+    };
+
     return NextResponse.json({
       success: true,
       runner: {
@@ -86,6 +100,7 @@ export async function GET(request: NextRequest) {
       count: orders.length,
       stats: statsMap,
       orders,
+      debug,  // 包含调试信息
     });
   } catch (error) {
     console.error('获取订单列表失败:', error);

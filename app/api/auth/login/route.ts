@@ -6,7 +6,7 @@ import { signToken } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, password } = body;
+    const { phone, password, rememberMe } = body;
 
     // 校验必填字段
     if (!phone || !password) {
@@ -41,17 +41,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 根据 rememberMe 设置 token 过期时间
+    // 记住我: 30天, 不记住: 1天
+    const tokenExpiresIn = rememberMe ? '30d' : '1d';
+    
     // 生成 JWT
     const token = signToken({
       userId: user.id,
       phone: user.phone,
       role: user.role,
-    });
+    }, tokenExpiresIn);
 
     return NextResponse.json({
       success: true,
       message: '登录成功',
       token,
+      expiresIn: tokenExpiresIn,
       user: {
         id: user.id,
         phone: user.phone,

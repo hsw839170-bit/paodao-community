@@ -12,7 +12,8 @@ interface RunnerProfile {
   platform: string;
   bio: string | null;
   pricePer10M: number;
-  status: string;
+  manualStatus: 'ONLINE' | 'OFFLINE'; // 手动设置的状态
+  computedStatus: 'ONLINE' | 'OFFLINE' | 'BUSY'; // 计算后的状态
   rating: number;
   ordersCount: number;
   createdAt: string;
@@ -29,6 +30,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<RunnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [togglingStatus, setTogglingStatus] = useState(false);
 
   useEffect(() => {
     // 检查登录状态
@@ -66,10 +68,58 @@ export default function ProfilePage() {
       setProfile(data.profile);
     } catch (err) {
       console.error('获取资料失败:', err);
-      // 显示错误状态而不是空白页面
       setProfile(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 切换在线/离线状态
+  const toggleStatus = async () => {
+    if (!profile || togglingStatus) return;
+
+    // BUSY 状态不能手动切换
+    if (profile.computedStatus === 'BUSY') {
+      alert('您有进行中的订单，无法切换状态。请先完成或取消订单。');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    setTogglingStatus(true);
+
+    // 新状态：当前是 ONLINE 则切为 OFFLINE，反之亦然
+    const newStatus = profile.manualStatus === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+
+    try {
+      const response = await fetch('/api/runners/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status: newStatus
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '切换状态失败');
+      }
+
+      // 刷新资料
+      await fetchProfile(token);
+    } catch (err: any) {
+      console.error('切换状态失败:', err);
+      alert(err.message || '切换状态失败');
+    } finally {
+      setTogglingStatus(false);
     }
   };
 
@@ -88,18 +138,26 @@ export default function ProfilePage() {
     return map[platform] || platform;
   };
 
-  const getStatusBadge = (status: string) => {
-    const map: Record<string, { text: string; className: string }> = {
-      ONLINE: { text: '在线接单中', className: 'bg-green-500' },
-      BUSY: { text: '忙碌中', className: 'bg-yellow-500' },
-      OFFLINE: { text: '离线', className: 'bg-gray-500' },
+  // 获取状态显示配置
+  const getStatusConfig = (status: 'ONLINE' | 'OFFLINE' | 'BUSY') => {
+    const configs = {
+      ONLINE: { 
+        text: '在线接单中', 
+        className: 'bg-green-500',
+        description: '您可以接收新订单'
+      },
+      OFFLINE: { 
+        text: '离线', 
+        className: 'bg-gray-500',
+        description: '您暂时不会出现在列表中'
+      },
+      BUSY: { 
+        text: '忙碌中', 
+        className: 'bg-yellow-500',
+        description: '您有进行中的订单，完成后自动恢复'
+      },
     };
-    const config = map[status] || { text: status, className: 'bg-gray-500' };
-    return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.className}`}>
-        {config.text}
-      </span>
-    );
+    return configs[status] || configs.OFFLINE;
   };
 
   if (loading) {
@@ -121,6 +179,8 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  const statusConfig = getStatusConfig(profile.computedStatus);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white">
@@ -164,7 +224,9 @@ export default function ProfilePage() {
               <div>
                 <h2 className="text-xl font-bold">{profile.nickname}</h2>
                 <div className="flex items-center gap-2 mt-1">
-                  {getStatusBadge(profile.status)}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusConfig.className}`}>
+                    {statusConfig.text}
+                  </span>
                   <span className="text-slate-400 text-sm">{getPlatformText(profile.platform)}</span>
                 </div>
                 <div className="text-slate-400 text-sm mt-1">
@@ -199,6 +261,54 @@ export default function ProfilePage() {
               <p className="text-slate-300">{profile.bio}</p>
             </div>
           )}
+        </div>
+
+        {/* 状态控制卡片 - 简化版 */}
+        <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 mb-6">
+          <h3 className="font-bold mb-4">在线状态</h3>
+          
+          <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl mb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`w-3 h-3 rounded-full ${statusConfig.className} ${profile.computedStatus !== 'OFFLINE' ? 'animate-pulse' : ''}`}></span>
+                <span className="font-medium">{statusConfig.text}</span>
+              </div>
+              <p className="text-slate-400 text-sm">{statusConfig.description}</p>
+            </div>
+            
+            {/* 状态切换按钮 - 只在非 BUSY 时显示 */}
+            {profile.computedStatus !== 'BUSY' ? (
+              <button
+                onClick={toggleStatus}
+                disabled={togglingStatus}
+                className={`px-6 py-2.5 rounded-lg font-medium transition text-sm ${
+                  profile.manualStatus === 'ONLINE'
+                    ? 'bg-red-600 hover:bg-red-500'
+                    : 'bg-green-600 hover:bg-green-500'
+                } disabled:opacity-50`}
+              >
+                {togglingStatus 
+                  ? '处理中...' 
+                  : profile.manualStatus === 'ONLINE' 
+                    ? '我要下线' 
+                    : '我要上线'
+                }
+              </button>
+            ) : (
+              <div className="px-4 py-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-sm">
+                有进行中的订单
+              </div>
+            )}
+          </div>
+
+          <div className="text-xs text-slate-500">
+            <p>💡 提示：</p>
+            <ul className="list-disc list-inside mt-1 space-y-1">
+              <li>点击"我要上线"后，您的信息会出现在首页列表中</li>
+              <li>点击"我要下线"后，您不会出现在首页列表中</li>
+              <li>当您接单后，状态会自动变为"忙碌中"，完成后自动恢复</li>
+            </ul>
+          </div>
         </div>
 
         {/* 数据统计 */}
@@ -241,9 +351,9 @@ export default function ProfilePage() {
         <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold">接单记录</h2>
-            <span className="text-xs bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full">
-              即将上线
-            </span>
+            <Link href="/profile/orders" className="text-blue-400 hover:text-blue-300 text-sm">
+              查看全部 →
+            </Link>
           </div>
 
           <div className="text-center py-8 text-slate-500">

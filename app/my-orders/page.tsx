@@ -11,6 +11,7 @@ interface Order {
   gameAmount: number | null;
   note: string | null;
   createdAt: string;
+  updatedAt: string;
   runner: {
     id: string;
     nickname: string;
@@ -61,8 +62,8 @@ export default function MyOrdersPage() {
 
     try {
       const url = filter === 'ALL' 
-        ? '/api/orders/' 
-        : `/api/orders/?status=${filter}`;
+        ? '/api/orders' 
+        : `/api/orders?status=${filter}`;
       
       const response = await fetch(url, {
         headers: {
@@ -112,7 +113,7 @@ export default function MyOrdersPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/orders/${reviewOrder.id}/review/`, {
+      const response = await fetch(`/api/orders/${reviewOrder.id}/review`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,6 +135,33 @@ export default function MyOrdersPage() {
       setError(err.message);
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  // 计算订单超时倒计时（ACCEPTED 状态 24 小时后自动完成）
+  const getTimeoutCountdown = (order: Order): { text: string; isWarning: boolean } | null => {
+    if (order.status !== 'ACCEPTED') return null;
+    
+    const ACCEPTED_TIMEOUT_MS = 24 * 60 * 60 * 1000; // 24 小时
+    const updatedAt = new Date(order.updatedAt).getTime();
+    const expireAt = updatedAt + ACCEPTED_TIMEOUT_MS;
+    const now = Date.now();
+    const remaining = expireAt - now;
+    
+    if (remaining <= 0) {
+      return { text: '即将自动完成', isWarning: true };
+    }
+    
+    const hours = Math.floor(remaining / (60 * 60 * 1000));
+    const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+    
+    // 剩余小于 4 小时显示警告
+    const isWarning = hours < 4;
+    
+    if (hours > 0) {
+      return { text: `${hours}小时${minutes}分后自动完成`, isWarning };
+    } else {
+      return { text: `${minutes}分后自动完成`, isWarning: true };
     }
   };
 
@@ -189,13 +217,13 @@ export default function MyOrdersPage() {
           <Link href="/" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
             首页
           </Link>
-          <Link href="/leaderboard/" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
+          <Link href="/leaderboard" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
             排行榜
           </Link>
-          <Link href="/profile/" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
+          <Link href="/profile" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
             个人中心
           </Link>
-          <Link href="/my-orders/" className="px-6 py-2.5 bg-blue-600 rounded-full text-white font-medium">
+          <Link href="/my-orders" className="px-6 py-2.5 bg-blue-600 rounded-full text-white font-medium">
             我的下单
           </Link>
         </nav>
@@ -291,6 +319,21 @@ export default function MyOrdersPage() {
                     <p className="text-slate-300">{order.note}</p>
                   </div>
                 )}
+
+                {/* 超时倒计时（仅 ACCEPTED 状态） */}
+                {order.status === 'ACCEPTED' && (() => {
+                  const countdown = getTimeoutCountdown(order);
+                  if (!countdown) return null;
+                  return (
+                    <div className={`text-xs mb-3 px-2 py-1 rounded-lg inline-block ${
+                      countdown.isWarning 
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                        : 'bg-blue-500/10 text-blue-400'
+                    }`}>
+                      ⏰ {countdown.text}
+                    </div>
+                  );
+                })()}
 
                 {/* 评价展示 */}
                 {order.review ? (

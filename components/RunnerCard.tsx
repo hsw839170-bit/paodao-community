@@ -12,7 +12,7 @@ interface Runner {
   orders: number
   income: number
   verified: boolean
-  status: string
+  computedStatus: 'ONLINE' | 'OFFLINE' | 'BUSY' // 使用计算后的状态
   pricePer10M: number
 }
 
@@ -26,13 +26,16 @@ export function RunnerCard({ runner }: { runner: Runner }) {
 
   const platformColor = platformColors[runner.platform] || platformColors['端游']
   
-  // 状态显示
+  // 状态显示 - 使用 computedStatus
   const statusConfig = {
-    online: { text: '在线', color: 'bg-green-500', dot: 'animate-pulse' },
-    offline: { text: '离线', color: 'bg-slate-500', dot: '' },
-    busy: { text: '接单中', color: 'bg-yellow-500', dot: 'animate-pulse' }
+    ONLINE: { text: '在线', color: 'bg-green-500', dot: 'animate-pulse' },
+    OFFLINE: { text: '离线', color: 'bg-slate-500', dot: '' },
+    BUSY: { text: '忙碌中', color: 'bg-yellow-500', dot: 'animate-pulse' }
   }
-  const status = statusConfig[runner.status as keyof typeof statusConfig] || statusConfig.offline
+  const status = statusConfig[runner.computedStatus] || statusConfig.OFFLINE
+
+  // 是否可以下单：只有 ONLINE 可以，BUSY 和 OFFLINE 都不行
+  const canOrder = runner.computedStatus === 'ONLINE'
 
   return (
     <div className="group relative bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 hover:border-blue-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
@@ -58,7 +61,7 @@ export function RunnerCard({ runner }: { runner: Runner }) {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="text-xl font-bold text-white">{runner.name}</h3>
-                {/* 状态指示 */}
+                {/* 状态指示 - 使用 computedStatus */}
                 <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs ${status.color}/20 text-${status.color === 'bg-green-500' ? 'green' : status.color === 'bg-yellow-500' ? 'yellow' : 'slate'}-300`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${status.color} ${status.dot}`} />
                   {status.text}
@@ -105,11 +108,20 @@ export function RunnerCard({ runner }: { runner: Runner }) {
             </div>
 
             <Link href={`/order/${runner.id}`}>
-              <button className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-full text-sm font-medium transition shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/40 flex items-center gap-2">
-                立即下单
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <button 
+                disabled={!canOrder}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-full text-sm font-medium transition shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/40 flex items-center gap-2"
+              >
+                {canOrder ? (
+                  <>
+                    立即下单
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </>
+                ) : (
+                  runner.computedStatus === 'BUSY' ? '跑手忙碌中' : '跑手离线中'
+                )}
               </button>
             </Link>
           </div>

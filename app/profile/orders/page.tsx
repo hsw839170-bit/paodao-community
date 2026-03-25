@@ -31,6 +31,14 @@ interface OrderStats {
   CANCELED?: number;
 }
 
+interface DebugInfo {
+  runnerId: string;
+  userId: string;
+  totalOrdersInDB: number;
+  filteredOrders: number;
+  queryStatus: string;
+}
+
 export default function MyOrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -39,6 +47,8 @@ export default function MyOrdersPage() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<string>('ALL');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [debug, setDebug] = useState<DebugInfo | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
   
   // 评价弹窗状态
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -62,8 +72,8 @@ export default function MyOrdersPage() {
 
     try {
       const url = filter === 'ALL' 
-        ? '/api/runners/orders/' 
-        : `/api/runners/orders/?status=${filter}`;
+        ? '/api/runners/orders' 
+        : `/api/runners/orders?status=${filter}`;
       
       const response = await fetch(url, {
         headers: {
@@ -87,6 +97,7 @@ export default function MyOrdersPage() {
       const data = await response.json();
       setOrders(data.orders);
       setStats(data.stats);
+      setDebug(data.debug);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -106,7 +117,7 @@ export default function MyOrdersPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/orders/${orderId}/accept/`, {
+      const response = await fetch(`/api/orders/${orderId}/accept`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -139,7 +150,7 @@ export default function MyOrdersPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/orders/${orderId}/complete/`, {
+      const response = await fetch(`/api/orders/${orderId}/complete`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -182,7 +193,7 @@ export default function MyOrdersPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/orders/${reviewOrder.id}/review/`, {
+      const response = await fetch(`/api/orders/${reviewOrder.id}/review`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -259,13 +270,13 @@ export default function MyOrdersPage() {
           <Link href="/" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
             首页
           </Link>
-          <Link href="/leaderboard/" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
+          <Link href="/leaderboard" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
             排行榜
           </Link>
-          <Link href="/profile/" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
+          <Link href="/profile" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
             个人中心
           </Link>
-          <Link href="/profile/orders/" className="px-6 py-2.5 bg-blue-600 rounded-full text-white font-medium">
+          <Link href="/profile/orders" className="px-6 py-2.5 bg-blue-600 rounded-full text-white font-medium">
             我的订单
           </Link>
         </nav>
@@ -274,6 +285,32 @@ export default function MyOrdersPage() {
           <h1 className="text-3xl font-bold mb-2">我的订单</h1>
           <p className="text-slate-400">管理您接收的订单</p>
         </div>
+
+        {/* 调试信息面板 */}
+        {debug && (
+          <div className="mb-6">
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="text-xs text-slate-500 hover:text-slate-300 underline"
+            >
+              {showDebug ? '隐藏调试信息' : '显示调试信息'}
+            </button>
+            
+            {showDebug && (
+              <div className="mt-2 p-4 bg-slate-800/50 border border-slate-700 rounded-xl text-xs font-mono text-slate-400">
+                <div>Runner ID: {debug.runnerId}</div>
+                <div>User ID: {debug.userId}</div>
+                <div>数据库中总订单数: {debug.totalOrdersInDB}</div>
+                <div>当前筛选订单数: {debug.filteredOrders}</div>
+                <div>当前筛选条件: {debug.queryStatus}</div>
+                <div className="mt-2 text-yellow-500">
+                  {debug.totalOrdersInDB === 0 && '⚠️ 数据库中没有属于您的订单'}
+                  {debug.totalOrdersInDB > 0 && debug.filteredOrders === 0 && '⚠️ 有订单但被当前筛选条件过滤'}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 统计卡片 */}
         <div className="grid grid-cols-4 gap-4 mb-8">

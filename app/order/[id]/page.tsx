@@ -1,20 +1,40 @@
 import Link from 'next/link'
-import { staticRunners } from '@/data/runners'
 import { notFound } from 'next/navigation'
 import OrderForm from './OrderForm'
-
-export function generateStaticParams() {
-  return staticRunners.map((runner) => ({
-    id: runner.id,
-  }))
-}
 
 interface PageProps {
   params: { id: string }
 }
 
-export default function OrderPage({ params }: PageProps) {
-  const runner = staticRunners.find(r => r.id === params.id)
+// 服务端获取真实跑手数据
+async function getRunner(id: string) {
+  try {
+    // 在服务端直接调用数据库或内部 API
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+    
+    const response = await fetch(`${baseUrl}/api/runners/${id}`, {
+      // 禁用缓存，确保获取最新数据
+      cache: 'no-store',
+    })
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null
+      }
+      throw new Error('Failed to fetch runner')
+    }
+    
+    return response.json()
+  } catch (error) {
+    console.error('Error fetching runner:', error)
+    return null
+  }
+}
+
+export default async function OrderPage({ params }: PageProps) {
+  const runner = await getRunner(params.id)
   
   if (!runner) {
     notFound()
@@ -27,7 +47,7 @@ export default function OrderPage({ params }: PageProps) {
           <Link href="/" className="px-6 py-2.5 bg-slate-700/80 backdrop-blur rounded-full text-white font-medium hover:bg-slate-600 transition">
             首页
           </Link>
-          <Link href="/leaderboard/" className="px-6 py-2.5 bg-slate-700/80 backdrop-blur rounded-full text-white font-medium hover:bg-slate-600 transition">
+          <Link href="/leaderboard" className="px-6 py-2.5 bg-slate-700/80 backdrop-blur rounded-full text-white font-medium hover:bg-slate-600 transition">
             排行榜
           </Link>
         </nav>
@@ -47,13 +67,29 @@ export default function OrderPage({ params }: PageProps) {
 
           <div className="bg-slate-700/50 rounded-xl p-6 mb-8">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-2xl font-bold">
-                {runner.name[0]}
-              </div>
+              {runner.avatar ? (
+                <img 
+                  src={runner.avatar} 
+                  alt={runner.name}
+                  className="w-16 h-16 rounded-xl object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-2xl font-bold">
+                  {runner.name[0]}
+                </div>
+              )}
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-lg font-bold">{runner.name}</span>
                   {runner.verified && <span className="text-green-400 text-sm">已认证</span>}
+                  {/* 显示计算后的状态 */}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    runner.status === 'online' 
+                      ? 'bg-green-500/20 text-green-400' 
+                      : 'bg-slate-500/20 text-slate-400'
+                  }`}>
+                    {runner.status === 'online' ? '在线' : '离线'}
+                  </span>
                 </div>
                 <div className="text-slate-400 text-sm">
                   {runner.rating} · {runner.orders}单 · {runner.platform}
