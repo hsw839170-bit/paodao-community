@@ -3,6 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Navbar from '../components/Navbar';
+import { 
+  UserCheck, 
+  Zap, 
+  Package, 
+  Clock, 
+  CheckCircle,
+  ChevronRight,
+  Search,
+  PlusCircle
+} from 'lucide-react';
 
 interface Order {
   id: string;
@@ -253,50 +264,104 @@ export default function MyOrdersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* 导航栏 */}
-        <nav className="flex justify-center gap-4 mb-8">
-          <Link href="/" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
-            首页
-          </Link>
-          <Link href="/leaderboard" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
-            排行榜
-          </Link>
-          <Link href="/profile" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
-            个人中心
-          </Link>
-          <Link href="/my-orders" className="px-6 py-2.5 bg-blue-600 rounded-full text-white font-medium">
-            我的下单
-          </Link>
-        </nav>
+        <Navbar isRunnerMode={false} />
 
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">我的下单</h1>
-          <p className="text-slate-400">查看您下单的订单和评价</p>
+          <p className="text-slate-400">管理您的订单，查看进度和评价</p>
         </div>
 
-        {/* 统计卡片 */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
+      {/* 统计卡片 */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
-            { key: 'PENDING', label: '待接单', count: stats.PENDING || 0 },
-            { key: 'ACCEPTED', label: '进行中', count: stats.ACCEPTED || 0 },
-            { key: 'COMPLETED', label: '已完成', count: stats.COMPLETED || 0 },
-            { key: 'ALL', label: '全部', count: Object.values(stats).reduce((a, b) => (a as number) + (b as number), 0) },
+            { 
+              key: 'PENDING', 
+              label: '待接单', 
+              count: stats.PENDING || 0,
+              icon: Package,
+              desc: '等待跑手接单',
+              color: 'text-yellow-400'
+            },
+            { 
+              key: 'ACCEPTED', 
+              label: '进行中', 
+              count: stats.ACCEPTED || 0,
+              icon: Clock,
+              desc: '跑手正在服务',
+              color: 'text-blue-400'
+            },
+            { 
+              key: 'COMPLETED', 
+              label: '已完成', 
+              count: stats.COMPLETED || 0,
+              icon: CheckCircle,
+              desc: '订单已结束',
+              color: 'text-green-400'
+            },
+            { 
+              key: 'ALL', 
+              label: '全部', 
+              count: Object.values(stats).reduce((a, b) => (a as number) + (b as number), 0),
+              icon: Package,
+              desc: '所有历史订单',
+              color: 'text-purple-400'
+            },
           ].map((item) => (
             <button
               key={item.key}
               onClick={() => setFilter(item.key)}
-              className={`p-4 rounded-xl border transition ${
+              className={`p-4 rounded-2xl border transition text-left ${
                 filter === item.key
-                  ? 'bg-blue-600 border-blue-500'
-                  : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
+                  ? 'bg-blue-600/20 border-blue-500'
+                  : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/50'
               }`}
             >
-              <div className="text-2xl font-bold">{item.count}</div>
-              <div className="text-sm text-slate-400">{item.label}</div>
+              <div className="flex items-center justify-between mb-2">
+                <item.icon className={`w-5 h-5 ${item.color}`} />
+                <span className={`text-2xl font-bold ${filter === item.key ? 'text-white' : 'text-slate-200'}`}>
+                  {item.count}
+                </span>
+              </div>
+              <div className="text-sm font-medium text-slate-300">{item.label}</div>
+              <div className="text-xs text-slate-500 mt-1">{item.desc}</div>
             </button>
           ))}
+        </div>
+
+        {/* 下单操作区 */}
+        <div className="bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-orange-600/10 border border-slate-700 rounded-2xl p-6 mb-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex-1">
+              <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-yellow-400" />
+                快速下单
+              </h3>
+              <p className="text-slate-400 text-sm">
+                您可以选择心仪的跑手直接下单，或将订单发布到抢单大厅让跑手来抢单
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <Link
+                href="/"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl font-medium text-white hover:from-blue-500 hover:to-blue-400 transition shadow-lg shadow-blue-600/20"
+              >
+                <UserCheck className="w-4 h-4" />
+                指定跑手下单
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/create-order?mode=PUBLIC"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl font-medium text-white hover:from-orange-400 hover:to-red-400 transition shadow-lg shadow-orange-500/20"
+              >
+                <Zap className="w-4 h-4" />
+                发布到抢单大厅
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -308,16 +373,30 @@ export default function MyOrdersPage() {
         {/* 订单列表 */}
         <div className="space-y-4">
           {orders.length === 0 ? (
-            <div className="bg-slate-800 rounded-xl p-12 text-center border border-slate-700">
-              <div className="text-5xl mb-4">📭</div>
+            <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-12 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-slate-700 to-slate-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Package className="w-10 h-10 text-slate-400" />
+              </div>
               <h3 className="text-xl font-bold mb-2">暂无订单</h3>
-              <p className="text-slate-400">您还没有下单，快去首页找跑手吧！</p>
-              <Link 
-                href="/" 
-                className="inline-block mt-4 px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition"
-              >
-                去找跑手
-              </Link>
+              <p className="text-slate-400 mb-6 max-w-md mx-auto">
+                您还没有下单。您可以前往首页选择心仪的跑手下单，或直接将订单发布到抢单大厅让跑手来抢单！
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link 
+                  href="/" 
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium transition"
+                >
+                  <Search className="w-4 h-4" />
+                  去找跑手
+                </Link>
+                <Link 
+                  href="/create-order?mode=PUBLIC" 
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 rounded-xl font-medium transition shadow-lg shadow-orange-500/20"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  发布抢单
+                </Link>
+              </div>
             </div>
           ) : (
             orders.map((order) => (
