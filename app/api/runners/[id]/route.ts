@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+/**
+ * GET /api/runners/[id]
+ * 获取跑手公开信息
+ * 
+ * 注意：返回的数据已脱敏，不包含手机号等敏感信息
+ * 手机号仅在下单后通过订单接口返回给下单用户
+ */
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -8,13 +15,16 @@ export async function GET(
   try {
     const runner = await prisma.runnerProfile.findUnique({
       where: { id: params.id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            phone: true,
-          }
-        },
+      select: {
+        id: true,
+        nickname: true,
+        avatar: true,
+        platform: true,
+        bio: true,
+        pricePer10M: true,
+        status: true,
+        rating: true,
+        ordersCount: true,
         // 获取平均评分
         reviews: {
           select: {
@@ -33,11 +43,11 @@ export async function GET(
       ? runner.reviews.reduce((sum, r) => sum + r.rating, 0) / runner.reviews.length
       : runner.rating
 
-    // 返回前端需要的格式
+    // 返回前端需要的格式（脱敏）
     const formattedRunner = {
       id: runner.id,
       name: runner.nickname,
-      contact: runner.phone,
+      // contact 字段已移除，手机号不在公开接口返回
       platform: runner.platform === 'PC' ? '端游' : runner.platform === 'MOBILE' ? '手游' : '端游/手游',
       rating: avgRating.toFixed(1) + '分',
       orders: runner.ordersCount,

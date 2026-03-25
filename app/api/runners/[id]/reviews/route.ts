@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+/**
+ * GET /api/runners/[id]/reviews
+ * 获取跑手评价列表
+ * 
+ * 注意：返回的用户信息已脱敏，不包含手机号
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -13,11 +19,15 @@ export async function GET(
         createdAt: 'desc',
       },
       take: 20,
-      include: {
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
         user: {
           select: {
             id: true,
-            phone: true,
+            // phone 已移除，避免泄露用户隐私
           },
         },
         order: {
