@@ -65,6 +65,8 @@ async function checkExpiredOrders() {
 
     // 3. 更新跑手的订单完成数
     for (const order of expiredAcceptedOrders) {
+      if (!order.runner) continue // 跳过无跑手的订单
+      
       await prisma.runnerProfile.update({
         where: { id: order.runner.id },
         data: {
@@ -85,7 +87,7 @@ async function checkExpiredOrders() {
     autoCompletedCount: expiredAcceptedOrders.length,
     orders: expiredAcceptedOrders.map(o => ({
       id: o.id,
-      runner: o.runner.nickname,
+      runner: o.runner?.nickname || '未知跑手',
       user: o.user.phone,
       updatedAt: o.updatedAt
     }))

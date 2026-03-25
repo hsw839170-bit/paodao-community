@@ -41,7 +41,7 @@ export async function GET(
 
     // 验证权限（下单用户或接单跑手）
     const isOwner = order.user.id === payload.userId;
-    const isRunner = order.runner.userId === payload.userId;
+    const isRunner = order.runner?.userId === payload.userId;
 
     if (!isOwner && !isRunner) {
       return NextResponse.json(
