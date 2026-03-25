@@ -49,7 +49,7 @@ export async function PUT(
     }
 
     // 验证是接单的跑手
-    if (order.runner.userId !== payload.userId) {
+    if (order.runner?.userId !== payload.userId) {
       return NextResponse.json(
         { error: '无权更新此订单' },
         { status: 403 }
@@ -103,14 +103,16 @@ export async function PUT(
           },
         });
 
-        // 更新跑手订单数
-        await tx.runnerProfile.update({
-          where: { id: order.runnerId },
-          data: {
-            ordersCount: { increment: 1 },
-            status: 'ONLINE',
-          },
-        });
+        // 更新跑手订单数（如果存在跑手）
+        if (order.runnerId) {
+          await tx.runnerProfile.update({
+            where: { id: order.runnerId },
+            data: {
+              ordersCount: { increment: 1 },
+              status: 'ONLINE',
+            },
+          });
+        }
       }
 
       return updated;

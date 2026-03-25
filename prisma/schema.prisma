@@ -27,6 +27,9 @@ model User {
 
   // 关联评价（作为评价人）
   reviews Review[]
+
+  // 关联通知
+  notifications Notification[]
 }
 
 enum Role {
@@ -79,6 +82,12 @@ enum RunnerStatus {
   BUSY
 }
 
+// 订单模式枚举
+enum OrderMode {
+  PRIVATE // 指定跑手
+  PUBLIC  // 公开发布，可抢单
+}
+
 // 订单表
 model Order {
   id          String      @id @default(uuid())
@@ -87,12 +96,19 @@ model Order {
   userId      String
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // 关联跑手
-  runnerId    String
-  runner      RunnerProfile @relation(fields: [runnerId], references: [id], onDelete: Cascade)
+  // 关联跑手（PUBLIC 模式下可为 null，抢单后填充）
+  runnerId    String?
+  runner      RunnerProfile? @relation(fields: [runnerId], references: [id], onDelete: Cascade)
+
+  // 订单模式
+  mode        OrderMode   @default(PRIVATE)
 
   // 订单状态
   status      OrderStatus @default(PENDING)
+
+  // 抢单相关（仅 PUBLIC 模式使用）
+  claimDeadline DateTime? // 抢单截止时间
+  claimedAt   DateTime?   // 抢单成功时间
 
   // 金额（元）
   amount      Int
@@ -117,6 +133,8 @@ model Order {
   @@index([userId])
   @@index([runnerId])
   @@index([status])
+  @@index([mode])
+  @@index([claimDeadline])
 }
 
 enum OrderStatus {
@@ -178,4 +196,22 @@ model Review {
   @@index([orderId])
   @@index([userId])
   @@index([runnerId])
+}
+
+// 通知表
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type      String   // ORDER_CLAIMED | ORDER_COMPLETED | ORDER_CANCELLED
+  title     String
+  message   String
+  orderId   String?
+  
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
 }

@@ -43,13 +43,22 @@ export async function POST(
       );
     }
 
-    // 验证订单状态为 COMPLETED
+    // 验证订单已完成且存在跑手
     if (order.status !== 'COMPLETED') {
       return NextResponse.json(
         { error: '订单未完成，无法评价' },
         { status: 400 }
       );
     }
+
+    if (!order.runnerId) {
+      return NextResponse.json(
+        { error: '订单无接单跑手，无法评价' },
+        { status: 400 }
+      );
+    }
+
+    const runnerId = order.runnerId; // 提取到局部变量
 
     // 验证是否已评价
     if (order.review) {
@@ -78,7 +87,7 @@ export async function POST(
         data: {
           orderId: params.id,
           userId: payload.userId,
-          runnerId: order.runnerId,
+          runnerId: runnerId,
           rating: parseInt(rating),
           comment: comment || null,
         },
@@ -86,14 +95,14 @@ export async function POST(
 
       // 2. 计算并更新跑手平均评分
       const reviews = await tx.review.findMany({
-        where: { runnerId: order.runnerId },
+        where: { runnerId: runnerId },
         select: { rating: true },
       });
 
       const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
 
       await tx.runnerProfile.update({
-        where: { id: order.runnerId },
+        where: { id: runnerId },
         data: {
           rating: Math.round(avgRating * 10) / 10, // 保留一位小数
         },
