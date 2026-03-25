@@ -4,6 +4,23 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// 角色绑定响应类型
+interface BindData {
+  success: boolean;
+  code: string;
+  message: string;
+  existingRoles: {
+    isBoss: boolean;
+    isRunner: boolean;
+  };
+  requestedRole: string;
+  user: {
+    id: string;
+    phone: string;
+    role: string;
+  };
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -25,7 +42,7 @@ export default function RegisterPage() {
   
   // 角色绑定相关状态
   const [showBindDialog, setShowBindDialog] = useState(false);
-  const [bindData, setBindData] = useState<any>(null);
+  const [bindData, setBindData] = useState<BindData | null>(null);
   const [bindLoading, setBindLoading] = useState(false);
 
   const isRunner = formData.role === 'RUNNER';
@@ -43,7 +60,7 @@ export default function RegisterPage() {
 
     try {
       // 构造请求体
-      const requestBody: any = {
+      const requestBody: Record<string, string> = {
         phone: formData.phone,
         password: formData.password,
         role: formData.role,
@@ -91,8 +108,9 @@ export default function RegisterPage() {
       } else {
         router.push('/'); // 老板跳转到首页找跑手
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '注册失败，请重试';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -164,8 +182,9 @@ export default function RegisterPage() {
       } else {
         router.push('/');
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '绑定失败，请重试';
+      setError(message);
     } finally {
       setBindLoading(false);
     }
