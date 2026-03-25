@@ -87,12 +87,15 @@ model Order {
   userId      String
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // 关联跑手
-  runnerId    String
-  runner      RunnerProfile @relation(fields: [runnerId], references: [id], onDelete: Cascade)
+  // 关联跑手（抢单模式下，最初为空，抢到后才填充）
+  runnerId    String?
+  runner      RunnerProfile? @relation(fields: [runnerId], references: [id], onDelete: Cascade)
 
   // 订单状态
   status      OrderStatus @default(PENDING)
+
+  // 订单模式：PRIVATE（指定跑手）| PUBLIC（公开抢单）
+  mode        OrderMode   @default(PRIVATE)
 
   // 金额（元）
   amount      Int
@@ -100,6 +103,10 @@ model Order {
   // 游戏相关（可选，后续扩展）
   gameAmount  Int?        // 游戏币数量（万）
   note        String?     // 订单备注
+
+  // 抢单相关字段
+  claimDeadline DateTime? // 抢单截止时间（PUBLIC 模式使用）
+  claimedBy     String?   // 最终抢单跑手 ID（预留字段，用于记录抢单成功的跑手）
 
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -110,6 +117,8 @@ model Order {
   @@index([userId])
   @@index([runnerId])
   @@index([status])
+  @@index([mode])
+  @@index([claimDeadline])
 }
 
 enum OrderStatus {
@@ -117,6 +126,11 @@ enum OrderStatus {
   ACCEPTED    // 已接单
   COMPLETED   // 已完成
   CANCELED    // 已取消
+}
+
+enum OrderMode {
+  PRIVATE // 指定跑手
+  PUBLIC  // 公开抢单
 }
 
 // 评价表

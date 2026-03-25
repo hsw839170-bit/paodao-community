@@ -63,17 +63,19 @@ async function checkExpiredOrders() {
 
     console.log(`✓ 已自动完成 ${result.count} 个订单`)
 
-    // 3. 更新跑手的订单完成数
+    // 3. 更新跑手的订单完成数（只更新有 runner 的订单）
     for (const order of expiredAcceptedOrders) {
-      await prisma.runnerProfile.update({
-        where: { id: order.runner.id },
-        data: {
-          ordersCount: {
-            increment: 1
+      if (order.runner) {
+        await prisma.runnerProfile.update({
+          where: { id: order.runner.id },
+          data: {
+            ordersCount: {
+              increment: 1
+            }
           }
-        }
-      })
-      console.log(`  - 订单 ${order.id.substring(0, 8)}... | 跑手: ${order.runner.nickname} | 超时自动完成`)
+        })
+        console.log(`  - 订单 ${order.id.substring(0, 8)}... | 跑手: ${order.runner.nickname} | 超时自动完成`)
+      }
     }
   }
 
@@ -85,7 +87,7 @@ async function checkExpiredOrders() {
     autoCompletedCount: expiredAcceptedOrders.length,
     orders: expiredAcceptedOrders.map(o => ({
       id: o.id,
-      runner: o.runner.nickname,
+      runner: o.runner?.nickname || 'N/A',
       user: o.user.phone,
       updatedAt: o.updatedAt
     }))
