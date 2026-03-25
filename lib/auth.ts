@@ -14,6 +14,7 @@ export interface JWTPayload {
   userId: string;
   phone: string;
   role: string;
+  activeRole?: 'BOSS' | 'RUNNER';  // 当前激活的身份
 }
 
 // 签发 JWT

@@ -44,12 +44,13 @@ export async function POST(request: NextRequest) {
     // 根据 rememberMe 设置 token 过期时间
     // 记住我: 30天, 不记住: 1天
     const tokenExpiresIn = rememberMe ? '30d' : '1d';
-    
+
     // 生成 JWT
     const token = signToken({
       userId: user.id,
       phone: user.phone,
       role: user.role,
+      activeRole: user.runnerProfile ? 'RUNNER' : 'BOSS',
     }, tokenExpiresIn);
 
     return NextResponse.json({
@@ -61,6 +62,10 @@ export async function POST(request: NextRequest) {
         id: user.id,
         phone: user.phone,
         role: user.role,
+        activeRole: user.runnerProfile ? 'RUNNER' : 'BOSS',
+        hasRunnerProfile: !!user.runnerProfile,
+        isBoss: user.role === 'BOSS',
+        canSwitch: user.role === 'BOSS' && !!user.runnerProfile,
         profile: user.runnerProfile,
       },
     });
