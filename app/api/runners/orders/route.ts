@@ -65,6 +65,10 @@ export async function GET(request: NextRequest) {
             comment: true,
           },
         },
+        logs: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        },
       },
     });
 

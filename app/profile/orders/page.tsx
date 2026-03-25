@@ -8,10 +8,12 @@ interface Order {
   id: string;
   userId: string;
   runnerId: string;
-  status: 'PENDING' | 'ACCEPTED' | 'COMPLETED' | 'CANCELED';
+  status: 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELED';
   amount: number;
   gameAmount: number | null;
   note: string | null;
+  progress: number;
+  progressNote: string | null;
   createdAt: string;
   user: {
     id: string;
@@ -22,6 +24,14 @@ interface Order {
     rating: number;
     comment: string | null;
   } | null;
+  logs?: {
+    id: string;
+    action: string;
+    message: string;
+    progressFrom: number | null;
+    progressTo: number | null;
+    createdAt: string;
+  }[];
 }
 
 interface OrderStats {
@@ -55,6 +65,18 @@ export default function MyOrdersPage() {
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
+  
+  // 进度更新弹窗状态
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [progressOrder, setProgressOrder] = useState<Order | null>(null);
+  const [progressForm, setProgressForm] = useState({ progress: 50, note: '' });
+  const [submittingProgress, setSubmittingProgress] = useState(false);
+  
+  // 日志弹窗状态
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [logsOrder, setLogsOrder] = useState<Order | null>(null);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -218,10 +240,84 @@ export default function MyOrdersPage() {
     }
   };
 
+  // 打开进度更新弹窗
+  const openProgressModal = (order: Order) => {
+    setProgressOrder(order);
+    setProgressForm({ progress: order.progress || 10, note: order.progressNote || '' });
+    setShowProgressModal(true);
+  };
+
+  // 提交进度更新
+  const handleSubmitProgress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!progressOrder) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    setSubmittingProgress(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/orders/${progressOrder.id}/progress`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(progressForm),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '更新进度失败');
+      }
+
+      setShowProgressModal(false);
+      setProgressOrder(null);
+      await fetchOrders();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmittingProgress(false);
+    }
+  };
+
+  // 获取订单日志
+  const fetchOrderLogs = async (order: Order) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setLoadingLogs(true);
+    setLogsOrder(order);
+    setShowLogsModal(true);
+
+    try {
+      const response = await fetch(`/api/orders/${order.id}/logs`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error('获取日志失败');
+
+      const data = await response.json();
+      setLogs(data.logs);
+    } catch (err) {
+      console.error('获取日志失败:', err);
+      setLogs([]);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const config: Record<string, { text: string; className: string }> = {
       PENDING: { text: '待接单', className: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
-      ACCEPTED: { text: '进行中', className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+      ACCEPTED: { text: '已接单', className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+      IN_PROGRESS: { text: '进行中', className: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
       COMPLETED: { text: '已完成', className: 'bg-green-500/20 text-green-400 border-green-500/30' },
       CANCELED: { text: '已取消', className: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
     };
@@ -397,6 +493,22 @@ export default function MyOrdersPage() {
                   </div>
                 )}
 
+                {/* 进度条 - 进行中订单显示 */}
+                {(order.status === 'ACCEPTED' || order.status === 'IN_PROGRESS') && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                      <span>{order.progressNote || '进行中...'}</span>
+                      <span>{order.progress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-700 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${order.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* 评价展示 */}
                 {order.review && (
                   <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
@@ -426,13 +538,34 @@ export default function MyOrdersPage() {
                       </button>
                     </>
                   )}
-                  {order.status === 'ACCEPTED' && (
-                    <button 
-                      onClick={() => handleComplete(order.id)}
-                      disabled={actionLoading === order.id}
-                      className="flex-1 py-2 bg-green-600 rounded-lg hover:bg-green-500 transition disabled:opacity-50"
+                  {order.status === 'ACCEPTED' || order.status === 'IN_PROGRESS' ? (
+                    <>
+                      <button 
+                        onClick={() => openProgressModal(order)}
+                        className="flex-1 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition"
+                      >
+                        更新进度
+                      </button>
+                      <button 
+                        onClick={() => handleComplete(order.id)}
+                        disabled={actionLoading === order.id}
+                        className="flex-1 py-2 bg-green-600 rounded-lg hover:bg-green-500 transition disabled:opacity-50"
+                      >
+                        {actionLoading === order.id ? '处理中...' : '标记完成'}
+                      </button>
+                    </>
+                  ) : null}
+                  
+                  {/* 查看轨迹按钮 */}
+                  {(order.status !== 'PENDING' && order.status !== 'CANCELED') && (
+                    <button
+                      onClick={() => fetchOrderLogs(order)}
+                      className="w-full mt-2 py-2 bg-slate-700 rounded-lg hover:bg-slate-600 transition flex items-center justify-center gap-2"
                     >
-                      {actionLoading === order.id ? '处理中...' : '标记完成'}
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      查看轨迹
                     </button>
                   )}
                 </div>
@@ -485,6 +618,131 @@ export default function MyOrdersPage() {
                 {submittingReview ? '提交中...' : '提交评价'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 进度更新弹窗 */}
+      {showProgressModal && progressOrder && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">更新订单进度</h3>
+              <button
+                onClick={() => setShowProgressModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitProgress} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  当前进度: {progressForm.progress}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={progressForm.progress}
+                  onChange={(e) => setProgressForm({ ...progressForm, progress: parseInt(e.target.value) })}
+                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  进度说明
+                </label>
+                <input
+                  type="text"
+                  value={progressForm.note}
+                  onChange={(e) => setProgressForm({ ...progressForm, note: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                  placeholder="例如：正在匹配对局中..."
+                />
+              </div>
+
+              <div className="text-xs text-slate-500">
+                💡 提示：进度达到 100% 时订单将自动标记为完成
+              </div>
+
+              <button
+                type="submit"
+                disabled={submittingProgress}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg font-bold disabled:opacity-50"
+              >
+                {submittingProgress ? '更新中...' : '更新进度'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 日志弹窗 */}
+      {showLogsModal && logsOrder && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700 max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold">订单轨迹</h3>
+                <p className="text-sm text-slate-400">¥{logsOrder.amount}</p>
+              </div>
+              <button
+                onClick={() => setShowLogsModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto max-h-[50vh] space-y-3">
+              {loadingLogs ? (
+                <div className="text-center py-8 text-slate-400">加载中...</div>
+              ) : logs.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">暂无轨迹记录</div>
+              ) : (
+                logs.map((log, index) => (
+                  <div key={log.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-3 h-3 rounded-full ${
+                        index === 0 ? 'bg-blue-500' : 'bg-slate-600'
+                      }`} />
+                      {index < logs.length - 1 && (
+                        <div className="w-0.5 h-full bg-slate-700 mt-1" />
+                      )}
+                    </div>
+                    <div className="flex-1 pb-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{log.message}</span>
+                        <span className="text-xs text-slate-500">
+                          {new Date(log.createdAt).toLocaleString('zh-CN', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1">
+                        {log.actorType === 'RUNNER' ? '跑手' : log.actorType === 'BOSS' ? '老板' : '系统'}
+                        {log.progressFrom !== null && log.progressTo !== null && (
+                          <span className="ml-2 text-blue-400">
+                            进度: {log.progressFrom}% → {log.progressTo}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

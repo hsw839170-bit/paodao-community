@@ -101,11 +101,18 @@ model Order {
   gameAmount  Int?        // 游戏币数量（万）
   note        String?     // 订单备注
 
+  // 进度追踪（0-100）
+  progress    Int         @default(0)
+  progressNote String?    // 进度说明（如：正在匹配中、游戏中等）
+
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   // 关联评价（一个订单只能有一条评价）
   review Review?
+
+  // 关联订单日志
+  logs OrderLog[]
 
   @@index([userId])
   @@index([runnerId])
@@ -115,8 +122,33 @@ model Order {
 enum OrderStatus {
   PENDING     // 待接单
   ACCEPTED    // 已接单
+  IN_PROGRESS // 进行中（新增）
   COMPLETED   // 已完成
   CANCELED    // 已取消
+}
+
+// 订单日志表（类似快递轨迹）
+model OrderLog {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  // 谁创建的日志
+  actorType   String   // 'BOSS' | 'RUNNER' | 'SYSTEM'
+  actorId     String
+  
+  // 日志内容
+  action      String   // 动作类型：ACCEPT, UPDATE_PROGRESS, COMPLETE, CANCEL 等
+  message     String   // 日志消息
+  
+  // 可选：进度变化
+  progressFrom Int?
+  progressTo   Int?
+  
+  createdAt   DateTime @default(now())
+
+  @@index([orderId])
+  @@index([createdAt])
 }
 
 // 评价表

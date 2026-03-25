@@ -60,20 +60,45 @@ export async function PUT(
       );
     }
 
-    // 更新订单状态为 ACCEPTED
-    const updatedOrder = await prisma.order.update({
-      where: { id: params.id },
-      data: {
-        status: 'ACCEPTED',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            phone: true,
+    // 更新订单状态为 ACCEPTED，并创建日志
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      const updated = await tx.order.update({
+        where: { id: params.id },
+        data: {
+          status: 'ACCEPTED',
+          progress: 10,
+          progressNote: '已接单，准备开始',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              phone: true,
+            },
           },
         },
-      },
+      });
+
+      // 创建接单日志
+      await tx.orderLog.create({
+        data: {
+          orderId: params.id,
+          actorType: 'RUNNER',
+          actorId: payload.userId,
+          action: 'ACCEPT',
+          message: '跑手已接单',
+          progressFrom: 0,
+          progressTo: 10,
+        },
+      });
+
+      // 更新跑手状态为 BUSY
+      await tx.runnerProfile.update({
+        where: { id: runner.id },
+        data: { status: 'BUSY' },
+      });
+
+      return updated;
     });
 
     return NextResponse.json({
