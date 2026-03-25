@@ -53,6 +53,11 @@ export default function OrderDetailPage() {
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
 
+  // 取消订单弹窗
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [submittingCancel, setSubmittingCancel] = useState(false);
+
   useEffect(() => {
     fetchOrderDetail();
   }, [orderId]);
@@ -146,6 +151,44 @@ export default function OrderDetailPage() {
       setError(err.message);
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  // 取消订单
+  const handleCancelOrder = async () => {
+    if (!order) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    setSubmittingCancel(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/orders/${order.id}/cancel`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: cancelReason }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '取消订单失败');
+      }
+
+      setShowCancelModal(false);
+      await fetchOrderDetail();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmittingCancel(false);
     }
   };
 
@@ -330,6 +373,18 @@ export default function OrderDetailPage() {
               </button>
             )
           )}
+          {/* 操作按钮区域 */}
+          {order.status === 'PENDING' && (
+            <div className="mt-6">
+              <button
+                onClick={() => setShowCancelModal(true)}
+                className="w-full py-3 bg-red-600/80 hover:bg-red-500 rounded-lg font-medium transition"
+              >
+                ❌ 取消订单
+              </button>
+              <p className="text-xs text-slate-500 text-center mt-2">仅待接单状态的订单可取消</p>
+            </div>
+          )}
         </div>
 
         {/* 订单轨迹 */}
@@ -396,6 +451,48 @@ export default function OrderDetailPage() {
                 {submittingReview ? '提交中...' : '提交评价'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 取消订单弹窗 */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">取消订单</h3>
+              <button onClick={() => setShowCancelModal(false)} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-slate-300 mb-4">确定要取消这个订单吗？此操作不可撤销。</p>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">取消原因（可选）</label>
+                <input
+                  type="text"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                  placeholder="例如：暂时不需要了..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 py-3 bg-slate-700 rounded-lg font-medium hover:bg-slate-600 transition"
+              >
+                再想想
+              </button>
+              <button
+                onClick={handleCancelOrder}
+                disabled={submittingCancel}
+                className="flex-1 py-3 bg-red-600 rounded-lg font-medium hover:bg-red-500 transition disabled:opacity-50"
+              >
+                {submittingCancel ? '取消中...' : '确认取消'}
+              </button>
+            </div>
           </div>
         </div>
       )}
