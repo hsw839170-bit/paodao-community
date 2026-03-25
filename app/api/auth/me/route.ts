@@ -75,6 +75,23 @@ export async function POST(request: NextRequest) {
       activeRole: targetRole,
     });
 
+    // 计算 computedStatus
+    let computedStatus: 'ONLINE' | 'OFFLINE' | 'BUSY' = 'OFFLINE';
+    if (user.runnerProfile) {
+      const activeOrder = await prisma.order.findFirst({
+        where: {
+          runnerId: user.runnerProfile.id,
+          status: 'ACCEPTED'
+        }
+      });
+      
+      if (activeOrder) {
+        computedStatus = 'BUSY';
+      } else {
+        computedStatus = user.runnerProfile.status as 'ONLINE' | 'OFFLINE';
+      }
+    }
+
     // 返回用户信息和激活的角色
     return NextResponse.json({
       success: true,
@@ -87,6 +104,11 @@ export async function POST(request: NextRequest) {
         activeRole: targetRole,
         hasRunnerProfile,
         isBoss: user.role === 'BOSS' || targetRole === 'BOSS',
+        profile: user.runnerProfile ? {
+          ...user.runnerProfile,
+          manualStatus: user.runnerProfile.status,
+          computedStatus,
+        } : null,
       },
     });
 
@@ -141,6 +163,23 @@ export async function GET(request: NextRequest) {
       activeRole = 'BOSS';
     }
 
+    // 计算 computedStatus
+    let computedStatus: 'ONLINE' | 'OFFLINE' | 'BUSY' = 'OFFLINE';
+    if (user.runnerProfile) {
+      const activeOrder = await prisma.order.findFirst({
+        where: {
+          runnerId: user.runnerProfile.id,
+          status: 'ACCEPTED'
+        }
+      });
+      
+      if (activeOrder) {
+        computedStatus = 'BUSY';
+      } else {
+        computedStatus = user.runnerProfile.status as 'ONLINE' | 'OFFLINE';
+      }
+    }
+
     return NextResponse.json({
       success: true,
       user: {
@@ -150,8 +189,12 @@ export async function GET(request: NextRequest) {
         activeRole,
         hasRunnerProfile,
         isBoss,
-        canSwitch: hasRunnerProfile && isBoss, // 是否可以切换
-        profile: user.runnerProfile,
+        canSwitch: hasRunnerProfile && isBoss,
+        profile: user.runnerProfile ? {
+          ...user.runnerProfile,
+          manualStatus: user.runnerProfile.status,
+          computedStatus,
+        } : null,
       },
     });
 
