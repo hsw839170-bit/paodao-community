@@ -224,6 +224,42 @@
 
 ---
 
+## 进度快照（2026-03-25 20:40）
+
+- **项目路径**: `C:\Users\admin\.openclaw\workspace\paodao-cloud`
+- **部署地址**: https://paodao-cloud.vercel.app
+
+### 已完成
+- ✅ **抢单模式完整实现**: Redis分布式锁 + 并发保护 + 实时倒计时
+- ✅ **抢单大厅页面**: `/public-orders` + 首页"⚡抢单大厅"入口按钮
+- ✅ **数据库迁移**: OrderMode/PUBLIC模式 + claimDeadline字段已添加
+- ✅ **API路由**: `GET /api/orders/public` + `PUT /api/orders/[id]/claim`
+- ✅ **Redis锁实现**: `lib/redis-lock.ts`（内存fallback + Redis生产支持）
+- ✅ **测试脚本**: `tests/test-claim-concurrency.js` 并发测试
+
+### 未完成/待办
+- **P0** 抢单功能最终验证（需人工并发测试确认）
+- **P1** 配置生产环境 `REDIS_URL`（当前为内存fallback）
+- **P2** 短信服务配置（忘记密码功能）
+- **P2** 头像本地上传（S3/R2）
+
+### 最近重要变更与修复
+1. **抢单功能上线** - Redis分布式锁防止超卖，实时倒计时每秒刷新
+2. **API请求头修复** - 添加 `Content-Type: application/json` 确保请求正常解析
+3. **数据库迁移完成** - PUBLIC订单模式字段已全部添加
+
+### 需要人工配合的最小清单
+1. ✅ **Redis配置已完成**（已在Vercel Dashboard配置`REDIS_URL`）
+2. ⏳ **并发测试验证** - 需登录两个跑手账号同时抢单验证仅一人成功
+3. **短信服务** - 生产环境需配置 `SMS_API_KEY` 和 `SMS_PROVIDER`
+
+### 下一步建议
+1. **高优先级**: 完成抢单功能并发测试，确认Redis锁工作正常
+2. **中优先级**: 配置短信服务用于生产环境忘记密码功能
+3. **低优先级**: 头像本地上传功能（S3/R2接入）
+
+---
+
 ## 进度快照 (2026-03-25 17:25)
 
 ### 本次变更
