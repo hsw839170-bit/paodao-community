@@ -128,7 +128,8 @@ export default function PublicOrdersPage() {
       const res = await fetch(`/api/orders/${orderId}/claim`, {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
