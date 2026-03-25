@@ -13,6 +13,7 @@ interface RunnerProfile {
   bio: string | null;
   pricePer10M: number;
   status: 'ONLINE' | 'OFFLINE'; // 手动状态
+  computedStatus?: 'ONLINE' | 'OFFLINE' | 'BUSY'; // 计算后的状态
   rating: number;
   ordersCount: number;
 }
@@ -123,6 +124,47 @@ export default function EditProfilePage() {
     }
   };
 
+  // 切换在线/离线状态
+  const toggleStatus = async () => {
+    if (!profile) return;
+
+    // BUSY 状态不能手动切换
+    if (profile.computedStatus === 'BUSY') {
+      alert('您有进行中的订单，无法切换状态。请先完成或取消订单。');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    const newStatus = profile.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+
+    try {
+      const response = await fetch('/api/runners/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '状态切换失败');
+      }
+
+      setProfile({ ...profile, status: newStatus });
+      setSuccess(`状态已切换为：${newStatus === 'ONLINE' ? '在线' : '离线'}`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4">
@@ -143,6 +185,52 @@ export default function EditProfilePage() {
             返回个人中心
           </Link>
         </div>
+
+        {/* 在线状态切换 */}
+        {profile && (
+          <div className="mb-6 p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-slate-300">当前状态：</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  profile.computedStatus === 'BUSY'
+                    ? 'bg-yellow-500/20 text-yellow-400'
+                    : profile.status === 'ONLINE'
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-slate-500/20 text-slate-400'
+                }`}>
+                  {profile.computedStatus === 'BUSY' 
+                    ? '忙碌中（有订单）' 
+                    : profile.status === 'ONLINE' 
+                    ? '在线' 
+                    : '离线'}
+                </span>
+              </div>
+              <button
+                onClick={toggleStatus}
+                disabled={profile.computedStatus === 'BUSY'}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  profile.computedStatus === 'BUSY'
+                    ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                    : profile.status === 'ONLINE'
+                    ? 'bg-red-600 hover:bg-red-500 text-white'
+                    : 'bg-green-600 hover:bg-green-500 text-white'
+                }`}
+              >
+                {profile.computedStatus === 'BUSY' 
+                  ? '有订单不可切换' 
+                  : profile.status === 'ONLINE' 
+                  ? '我要下线' 
+                  : '我要上线'}
+              </button>
+            </div>            
+            {profile.computedStatus === 'BUSY' && (
+              <p className="text-xs text-slate-400 mt-2">
+                * 您有进行中的订单，完成或取消订单后可切换状态
+              </p>
+            )}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-500/20 text-red-400 p-3 rounded mb-4 text-sm border border-red-500/30">
