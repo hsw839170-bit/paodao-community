@@ -61,6 +61,16 @@ export default function PublicOrdersPage() {
     order: 'desc',
   });
   const [showFilters, setShowFilters] = useState(false);
+  // 倒计时 tick，用于触发重新渲染
+  const [tick, setTick] = useState(0);
+
+  // 实时倒计时：每秒更新一次
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick(t => t + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 获取公开订单列表
   const fetchOrders = async (cursor?: string) => {
@@ -141,8 +151,8 @@ export default function PublicOrdersPage() {
     }
   };
 
-  // 格式化剩余时间
-  const getTimeLeft = (deadline: string | null) => {
+  // 格式化剩余时间（依赖 tick 实现实时更新）
+  const getTimeLeft = (deadline: string | null, _tick: number) => {
     if (!deadline) return null;
     const diff = new Date(deadline).getTime() - Date.now();
     if (diff <= 0) return '已过期';
@@ -262,7 +272,7 @@ export default function PublicOrdersPage() {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => {
-              const timeLeft = getTimeLeft(order.claimDeadline);
+              const timeLeft = getTimeLeft(order.claimDeadline, tick);
               
               return (
                 <div
