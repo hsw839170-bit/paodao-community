@@ -3,19 +3,30 @@ import { prisma } from '@/lib/prisma'
 import { computeRunnersStatus } from '@/lib/runner-status'
 import { RunnerCard } from '@/components/RunnerCard'
 import FilterBar from './components/FilterBar'
+import StatsCards from './components/StatsCards'
 
 interface SearchParams {
   platform?: string
   minPrice?: string
   maxPrice?: string
+  status?: string
 }
 
 async function getRunners(searchParams: SearchParams) {
-  const { platform, minPrice, maxPrice } = searchParams
+  const { platform, minPrice, maxPrice, status } = searchParams
 
   // 构建查询条件
-  const where: any = {
-    status: 'ONLINE'
+  const where: any = {}
+  
+  // 基础状态筛选
+  if (!status || status === 'ONLINE') {
+    // 默认或明确筛选 ONLINE：查询手动设置为 ONLINE 的跑手
+    where.status = 'ONLINE'
+  } else if (status === 'ALL') {
+    // 查询所有（不限制 status）
+  } else {
+    // 其他情况默认 ONLINE
+    where.status = 'ONLINE'
   }
 
   // 平台筛选
@@ -60,11 +71,18 @@ async function getRunners(searchParams: SearchParams) {
   const statusMap = await computeRunnersStatus(runnerIds)
 
   // 合并 computedStatus 到返回数据
-  return runners.map(runner => ({
+  const runnersWithComputedStatus = runners.map(runner => ({
     ...runner,
     manualStatus: runner.status,
     computedStatus: statusMap.get(runner.id) || runner.status
   }))
+
+  // 如果筛选 BUSY，只返回 computedStatus 为 BUSY 的跑手
+  if (status === 'BUSY') {
+    return runnersWithComputedStatus.filter(r => r.computedStatus === 'BUSY')
+  }
+
+  return runnersWithComputedStatus
 }
 
 export default async function Home({
@@ -72,6 +90,9 @@ export default async function Home({
 }: {
   searchParams: SearchParams
 }) {
+  // 获取总数（所有跑手）
+  const totalCount = await prisma.runnerProfile.count()
+  
   const runners = await getRunners(searchParams)
 
   // 将数据格式转换为 RunnerCard 需要的格式
@@ -147,20 +168,13 @@ export default async function Home({
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-3 gap-4 mt-16 max-w-2xl mx-auto">
-            <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 text-center hover:border-blue-500/50 transition">
-              <div className="text-3xl font-bold text-blue-400 mb-1">{runners.length}</div>
-              <div className="text-sm text-slate-400">入驻跑手</div>
-            </div>
-            <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 text-center hover:border-green-500/50 transition">
-              <div className="text-3xl font-bold text-green-400 mb-1">{onlineCount}</div>
-              <div className="text-sm text-slate-400">在线可接单</div>
-            </div>
-            <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 text-center hover:border-yellow-500/50 transition">
-              <div className="text-3xl font-bold text-yellow-400 mb-1">{busyCount}</div>
-              <div className="text-sm text-slate-400">忙碌中</div>
-            </div>
-          </div>
+          <Suspense>
+            <StatsCards 
+              totalCount={totalCount} 
+              onlineCount={onlineCount} 
+              busyCount={busyCount} 
+            />
+          </Suspense>
         </div>
       </section>
 
