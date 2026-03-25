@@ -1,32 +1,54 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
 import OrderForm from './OrderForm'
 
 interface PageProps {
   params: { id: string }
 }
 
-// 服务端获取真实跑手数据
+// 服务端直接查询数据库
 async function getRunner(id: string) {
   try {
-    // 在服务端直接调用数据库或内部 API
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-    
-    const response = await fetch(`${baseUrl}/api/runners/${id}`, {
-      // 禁用缓存，确保获取最新数据
-      cache: 'no-store',
-    })
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null
+    const runner = await prisma.runnerProfile.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            phone: true,
+          }
+        },
+        reviews: {
+          select: {
+            rating: true,
+          }
+        }
       }
-      throw new Error('Failed to fetch runner')
+    })
+
+    if (!runner) {
+      return null
     }
-    
-    return response.json()
+
+    // 计算实际评分
+    const avgRating = runner.reviews.length > 0
+      ? runner.reviews.reduce((sum, r) => sum + r.rating, 0) / runner.reviews.length
+      : runner.rating
+
+    return {
+      id: runner.id,
+      name: runner.nickname,
+      contact: runner.phone,
+      platform: runner.platform === 'PC' ? '端游' : runner.platform === 'MOBILE' ? '手游' : '端游/手游',
+      rating: avgRating.toFixed(1) + '分',
+      orders: runner.ordersCount,
+      status: runner.status === 'ONLINE' ? 'online' : 'offline',
+      pricePer10M: runner.pricePer10M,
+      verified: runner.ordersCount >= 10,
+      avatar: runner.avatar || undefined,
+      bio: runner.bio || undefined,
+    }
   } catch (error) {
     console.error('Error fetching runner:', error)
     return null
@@ -82,7 +104,6 @@ export default async function OrderPage({ params }: PageProps) {
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-lg font-bold">{runner.name}</span>
                   {runner.verified && <span className="text-green-400 text-sm">已认证</span>}
-                  {/* 显示计算后的状态 */}
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                     runner.status === 'online' 
                       ? 'bg-green-500/20 text-green-400' 
