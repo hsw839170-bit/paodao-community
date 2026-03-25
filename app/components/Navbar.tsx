@@ -12,6 +12,7 @@ export default function Navbar({ isRunnerMode = false }: NavbarProps) {
 
   const navItems = [
     { href: '/', label: '首页', active: pathname === '/' },
+    { href: '/public-orders', label: '抢单大厅', active: pathname === '/public-orders' },
     { href: '/leaderboard', label: '排行榜', active: pathname === '/leaderboard' },
     { href: '/profile', label: '个人中心', active: pathname.startsWith('/profile') },
   ];
