@@ -305,19 +305,51 @@ export default function MyOrdersPage() {
           </div>
         )}
 
+        {/* 快速下单操作区 */}
+        <div className="bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-orange-600/10 border border-slate-700 rounded-2xl p-6 mb-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-center md:text-left">
+              <h3 className="text-lg font-bold mb-1">🚀 快速下单</h3>
+              <p className="text-slate-400 text-sm">选择心仪跑手直接下单，或发布到抢单大厅让跑手来抢</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/"
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium text-white transition text-center"
+              >
+                指定跑手下订单
+              </Link>
+              <Link
+                href="/create-order?mode=PUBLIC"
+                className="px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 rounded-xl font-medium text-white transition text-center"
+              >
+                发布到抢单大厅
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* 订单列表 */}
         <div className="space-y-4">
           {orders.length === 0 ? (
             <div className="bg-slate-800 rounded-xl p-12 text-center border border-slate-700">
               <div className="text-5xl mb-4">📭</div>
               <h3 className="text-xl font-bold mb-2">暂无订单</h3>
-              <p className="text-slate-400">您还没有下单，快去首页找跑手吧！</p>
-              <Link 
-                href="/" 
-                className="inline-block mt-4 px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition"
-              >
-                去找跑手
-              </Link>
+              <p className="text-slate-400 mb-6">您还没有下单，快去发布订单吧！</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link 
+                  href="/" 
+                  className="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition"
+                >
+                  去找跑手
+                </Link>
+                <Link 
+                  href="/create-order?mode=PUBLIC" 
+                  className="px-6 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg hover:from-yellow-400 hover:to-orange-400 transition"
+                >
+                  发布到抢单大厅
+                </Link>
+              </div>
             </div>
           ) : (
             orders.map((order) => (

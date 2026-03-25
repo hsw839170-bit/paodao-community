@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 interface CreateOrderFormProps {
   runnerId?: string;
@@ -16,7 +16,10 @@ export default function CreateOrderForm({
   runnerPrice 
 }: CreateOrderFormProps) {
   const router = useRouter()
-  const [mode, setMode] = useState<'PRIVATE' | 'PUBLIC'>(runnerId ? 'PRIVATE' : 'PUBLIC')
+  const searchParams = useSearchParams()
+  const urlMode = searchParams.get('mode') as 'PRIVATE' | 'PUBLIC' | null
+  
+  const [mode, setMode] = useState<'PRIVATE' | 'PUBLIC'>(urlMode || (runnerId ? 'PRIVATE' : 'PUBLIC'))
   const [formData, setFormData] = useState({
     title: '',
     description: '',
