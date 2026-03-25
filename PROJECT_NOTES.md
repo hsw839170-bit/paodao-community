@@ -157,6 +157,11 @@
 - 搜索筛选：首页支持平台筛选和价格区间筛选
 - 24小时自动完成：ACCEPTED 状态订单超时自动标记为 COMPLETED
 - 抢单模式：Redis 分布式锁 + 并发保护 + 实时倒计时
+- **PUBLIC 订单创建**（2026-03-25 新增）：
+  - 后端：`POST /api/orders/public` 接口，支持 BOSS 创建公开订单
+  - 前端：`/create-order` 页面，支持 PRIVATE/PUBLIC 模式切换
+  - 验证：title/amount/gameAmount/claimDeadline/platform 字段校验
+  - 权限：仅 BOSS 可创建，返回数据脱敏（无手机号）
 
 ### 待办 (P1/P2)
 - **P1**: 配置生产环境 `REDIS_URL`（抢单功能需要）
@@ -176,6 +181,37 @@
 3. **中优先级**: 修正 `vercel.json` cron 频率配置
 4. **低优先级**: 头像本地上传功能（S3/R2 接入）
 5. **低优先级**: 域名访问问题排查（https://paodao-cloud.vercel.app 访问异常）
+
+---
+
+### Feature: PUBLIC Order Creation - 自测报告（2026-03-25 22:18）
+
+**实现内容**：
+- 后端：`POST /api/orders/public` - BOSS 权限，创建 mode='PUBLIC' 订单
+- 前端：`/create-order` 页面 - PRIVATE/PUBLIC 切换表单
+- 字段：title（100字符）、amount（1-100000）、gameAmount（可选）、description（500字符）、claimDeadline（默认24h）、platform（PC/MOBILE/BOTH）
+
+**自测结果**：
+| 测试项 | 结果 | 说明 |
+|--------|------|------|
+| BOSS 正常创建 | 通过 | 合法参数返回 success，订单写入数据库 |
+| 未登录访问 | 通过 | 返回 401 '请先登录' |
+| 非 BOSS 访问（RUNNER）| 通过 | 返回 403 '只有老板可以发布公开订单' |
+| title 为空 | 通过 | 返回 400 '订单标题不能为空' |
+| title 过长（>100）| 通过 | 返回 400 '订单标题不能超过 100 字符' |
+| amount 越界 | 通过 | 返回 400 '订单金额必须在 1-100000 元之间' |
+| description 过长（>500）| 通过 | 返回 400 '描述长度不能超过 500 字符' |
+| 订单出现在抢单大厅 | 通过 | GET /api/orders/public 返回新订单，/public-orders 页面可见 |
+| 数据脱敏检查 | 通过 | 响应中不包含用户手机号、内部 ID 等敏感信息 |
+
+**限制与 TODO**：
+1. platform 字段暂存于 progressNote，待 schema 更新后迁移到独立字段
+2. PUBLIC 订单的平台筛选功能尚未实现（需要 platform 字段支持）
+3. title 字段暂存于 note 列，考虑后续添加独立 title 字段
+
+**自测步骤**：
+1. 以 BOSS 身份登录 → 访问 /create-order → 选择"发布到抢单大厅" → 填写表单提交
+2. 访问 /public-orders 确认订单出现 → 用跑手账号登录尝试抢单
 
 ---
 
