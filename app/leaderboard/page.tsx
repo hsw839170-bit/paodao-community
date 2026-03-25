@@ -1,10 +1,38 @@
 import Link from 'next/link'
-import { staticRunners } from '@/data/runners'
+import { prisma } from '@/lib/prisma'
 
-export default function LeaderboardPage() {
-  const byIncome = [...staticRunners].sort((a, b) => b.income - a.income).slice(0, 10)
-  const byOrders = [...staticRunners].sort((a, b) => b.orders - a.orders).slice(0, 10)
-  const byRating = [...staticRunners].filter(r => r.orders >= 10).sort((a, b) => b.rating - a.rating).slice(0, 10)
+async function getLeaderboardData() {
+  const runners = await prisma.runnerProfile.findMany({
+    select: {
+      id: true,
+      nickname: true,
+      platform: true,
+      rating: true,
+      ordersCount: true,
+    },
+    orderBy: {
+      ordersCount: 'desc'
+    },
+    take: 10
+  })
+
+  // 计算收入（简化：假设每单平均50元）
+  const withIncome = runners.map(r => ({
+    ...r,
+    income: r.ordersCount * 50
+  }))
+
+  return {
+    byIncome: [...withIncome].sort((a, b) => b.income - a.income),
+    byOrders: [...withIncome].sort((a, b) => b.ordersCount - a.ordersCount),
+    byRating: [...withIncome]
+      .filter(r => r.ordersCount >= 10)
+      .sort((a, b) => b.rating - a.rating)
+  }
+}
+
+export default async function LeaderboardPage() {
+  const { byIncome, byOrders, byRating } = await getLeaderboardData()
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
@@ -22,8 +50,8 @@ export default function LeaderboardPage() {
                   <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded hover:bg-slate-700 transition">
                     <span className={`w-6 text-center font-bold ${index < 3 ? 'text-yellow-400' : 'text-slate-400'}`}>{index + 1}</span>
                     <div className="flex-1">
-                      <div className="font-medium">{runner.name}</div>
-                      <div className="text-xs text-slate-400">{runner.platform}</div>
+                      <div className="font-medium">{runner.nickname}</div>
+                      <div className="text-xs text-slate-400">{runner.platform === 'PC' ? '端游' : runner.platform === 'MOBILE' ? '手游' : '两者都可'}</div>
                     </div>
                     <div className="text-purple-400 font-bold">¥{runner.income}</div>
                   </div>
@@ -40,10 +68,10 @@ export default function LeaderboardPage() {
                   <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded hover:bg-slate-700 transition">
                     <span className={`w-6 text-center font-bold ${index < 3 ? 'text-yellow-400' : 'text-slate-400'}`}>{index + 1}</span>
                     <div className="flex-1">
-                      <div className="font-medium">{runner.name}</div>
-                      <div className="text-xs text-slate-400">{runner.platform}</div>
+                      <div className="font-medium">{runner.nickname}</div>
+                      <div className="text-xs text-slate-400">{runner.platform === 'PC' ? '端游' : runner.platform === 'MOBILE' ? '手游' : '两者都可'}</div>
                     </div>
-                    <div className="text-green-400 font-bold">{runner.orders}单</div>
+                    <div className="text-green-400 font-bold">{runner.ordersCount}单</div>
                   </div>
                 </Link>
               ))}
@@ -58,8 +86,8 @@ export default function LeaderboardPage() {
                   <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded hover:bg-slate-700 transition">
                     <span className={`w-6 text-center font-bold ${index < 3 ? 'text-yellow-400' : 'text-slate-400'}`}>{index + 1}</span>
                     <div className="flex-1">
-                      <div className="font-medium">{runner.name}</div>
-                      <div className="text-xs text-slate-400">{runner.orders}单</div>
+                      <div className="font-medium">{runner.nickname}</div>
+                      <div className="text-xs text-slate-400">{runner.ordersCount}单</div>
                     </div>
                     <div className="text-yellow-400 font-bold">★ {runner.rating}</div>
                   </div>

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 import { computeRunnersStatus } from '@/lib/runner-status'
 import { RunnerCard } from '@/components/RunnerCard'
@@ -171,7 +172,9 @@ export default async function Home({
         </div>
 
         {/* 筛选栏 - 客户端组件 */}
-        <FilterBar />
+        <Suspense fallback={<div className="h-16 bg-slate-800/50 rounded-2xl mb-8 animate-pulse"></div>}>
+          <FilterBar />
+        </Suspense>
 
         {/* 跑手列表 - 服务端渲染 */}
         <div className="grid gap-6">
