@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Navbar from '../components/Navbar';
 
 interface RunnerProfile {
   id: string;
@@ -36,6 +37,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [switchingRole, setSwitchingRole] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState(false);
+  // 本地乐观状态，用于 UI 即时反馈
+  const [optimisticStatus, setOptimisticStatus] = useState<'ONLINE' | 'OFFLINE' | 'BUSY' | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -137,8 +140,11 @@ export default function ProfilePage() {
       return;
     }
 
-    setTogglingStatus(true);
     const newStatus = profile.manualStatus === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
+    
+    // 乐观更新：立即更新本地状态，提供即时反馈
+    setOptimisticStatus(newStatus);
+    setTogglingStatus(true);
 
     try {
       const response = await fetch('/api/runners/update', {
@@ -152,16 +158,19 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         const data = await response.json();
+        // 失败时恢复原始状态
+        setOptimisticStatus(null);
         throw new Error(data.error || '切换状态失败');
       }
 
-      // 刷新用户信息
+      // 成功：刷新用户信息，同步后端状态
       await fetchUserInfo(token);
     } catch (err: any) {
       console.error('切换状态失败:', err);
       alert(err.message || '切换状态失败');
     } finally {
       setTogglingStatus(false);
+      setOptimisticStatus(null);
     }
   };
 
@@ -174,6 +183,18 @@ export default function ProfilePage() {
   const getPlatformText = (platform: string) => {
     const map: Record<string, string> = { PC: '端游', MOBILE: '手游', BOTH: '两者都可' };
     return map[platform] || platform;
+  };
+
+  // 获取当前显示的状态（优先使用乐观更新状态）
+  const getCurrentStatus = (): 'ONLINE' | 'OFFLINE' | 'BUSY' => {
+    if (optimisticStatus) return optimisticStatus;
+    return profile?.computedStatus || 'OFFLINE';
+  };
+
+  // 获取当前 manualStatus（用于按钮显示）
+  const getCurrentManualStatus = (): 'ONLINE' | 'OFFLINE' => {
+    if (optimisticStatus === 'ONLINE' || optimisticStatus === 'OFFLINE') return optimisticStatus;
+    return profile?.manualStatus || 'OFFLINE';
   };
 
   const getStatusConfig = (status: 'ONLINE' | 'OFFLINE' | 'BUSY') => {
@@ -208,26 +229,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* 导航栏 */}
-        <nav className="flex justify-center gap-4 mb-8 flex-wrap">
-          <Link href="/" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
-            首页
-          </Link>
-          <Link href="/leaderboard" className="px-6 py-2.5 bg-slate-700/80 rounded-full text-white font-medium hover:bg-slate-600 transition">
-            排行榜
-          </Link>
-          <Link href="/profile" className="px-6 py-2.5 bg-blue-600 rounded-full text-white font-medium">
-            个人中心
-          </Link>
-          {isRunnerMode ? (
-            <Link href="/my-orders" className="px-6 py-2.5 bg-purple-600 rounded-full text-white font-medium hover:bg-purple-500 transition">
-              我是老板
-            </Link>
-          ) : (
-            <Link href="/register?role=RUNNER" className="px-6 py-2.5 bg-green-600 rounded-full text-white font-medium hover:bg-green-500 transition">
-              我要入驻
-            </Link>
-          )}
-        </nav>
+        <Navbar isRunnerMode={isRunnerMode} />
 
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">
@@ -297,8 +299,8 @@ export default function ProfilePage() {
                   <div>
                     <h2 className="text-xl font-bold">{profile.nickname}</h2>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusConfig(profile.computedStatus).className}`}>
-                        {getStatusConfig(profile.computedStatus).text}
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusConfig(getCurrentStatus()).className}`}>
+                        {getStatusConfig(getCurrentStatus()).text}
                       </span>
                       <span className="text-slate-400 text-sm">{getPlatformText(profile.platform)}</span>
                     </div>
@@ -337,28 +339,29 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`w-3 h-3 rounded-full ${getStatusConfig(profile.computedStatus).className} ${profile.computedStatus !== 'OFFLINE' ? 'animate-pulse' : ''}`}></span>
-                    <span className="font-medium">{getStatusConfig(profile.computedStatus).text}</span>
+                    <span className={`w-3 h-3 rounded-full ${getStatusConfig(getCurrentStatus()).className} ${getCurrentStatus() !== 'OFFLINE' ? 'animate-pulse' : ''}`}></span>
+                    <span className="font-medium">{getStatusConfig(getCurrentStatus()).text}</span>
+                    {optimisticStatus && <span className="text-xs text-slate-400">(更新中...)</span>}
                   </div>
-                  <p className="text-slate-400 text-sm">{getStatusConfig(profile.computedStatus).description}</p>
+                  <p className="text-slate-400 text-sm">{getStatusConfig(getCurrentStatus()).description}</p>
                 </div>
                 
                 <button
                   onClick={toggleStatus}
-                  disabled={togglingStatus || profile.computedStatus === 'BUSY'}
+                  disabled={togglingStatus || getCurrentStatus() === 'BUSY'}
                   className={`px-6 py-2.5 rounded-lg font-medium transition text-sm whitespace-nowrap ml-4 ${
-                    profile.computedStatus === 'BUSY'
+                    getCurrentStatus() === 'BUSY'
                       ? 'bg-yellow-600/50 text-yellow-200 cursor-not-allowed'
-                      : profile.manualStatus === 'ONLINE'
+                      : getCurrentManualStatus() === 'ONLINE'
                       ? 'bg-red-600 hover:bg-red-500 text-white'
                       : 'bg-green-600 hover:bg-green-500 text-white'
                   } disabled:opacity-70`}
                 >
                   {togglingStatus 
                     ? '处理中...' 
-                    : profile.computedStatus === 'BUSY'
+                    : getCurrentStatus() === 'BUSY'
                       ? '忙碌中'
-                      : profile.manualStatus === 'ONLINE' 
+                      : getCurrentManualStatus() === 'ONLINE' 
                         ? '我要下线' 
                         : '我要上线'
                   }
