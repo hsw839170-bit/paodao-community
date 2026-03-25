@@ -78,13 +78,14 @@ export async function PUT(
         },
       });
 
-      // 2. 更新跑手的订单数和收入（可选）
+      // 2. 更新跑手的订单数和状态（从 BUSY 改回 ONLINE）
       await tx.runnerProfile.update({
         where: { id: runner.id },
         data: {
           ordersCount: {
             increment: 1,
           },
+          status: 'ONLINE',
         },
       });
 

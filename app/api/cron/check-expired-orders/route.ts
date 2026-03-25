@@ -63,7 +63,7 @@ async function checkExpiredOrders() {
 
     console.log(`✓ 已自动完成 ${result.count} 个订单`)
 
-    // 3. 更新跑手的订单完成数
+    // 3. 更新跑手的订单完成数和状态
     for (const order of expiredAcceptedOrders) {
       if (!order.runner) continue // 跳过无跑手的订单
       
@@ -72,7 +72,8 @@ async function checkExpiredOrders() {
         data: {
           ordersCount: {
             increment: 1
-          }
+          },
+          status: 'ONLINE' // 从 BUSY 改回 ONLINE
         }
       })
       console.log(`  - 订单 ${order.id.substring(0, 8)}... | 跑手: ${order.runner.nickname} | 超时自动完成`)
