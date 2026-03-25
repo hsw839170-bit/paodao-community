@@ -46,13 +46,57 @@ export async function POST(request: NextRequest) {
     // 检查手机号是否已注册
     const existingUser = await prisma.user.findUnique({
       where: { phone },
+      include: {
+        runnerProfile: true,
+      },
     });
 
+    // 如果用户已存在，返回特殊响应，前端引导绑定角色
     if (existingUser) {
-      return NextResponse.json(
-        { error: '该手机号已被注册' },
-        { status: 409 }
-      );
+      const hasRunnerProfile = !!existingUser.runnerProfile;
+      const isBoss = existingUser.role === 'BOSS';
+      
+      // 检查密码是否正确
+      const isValidPassword = await bcrypt.compare(password, existingUser.password);
+      
+      if (!isValidPassword) {
+        return NextResponse.json(
+          { error: '该手机号已注册，密码错误' },
+          { status: 409 }
+        );
+      }
+
+      // 根据请求的角色和现有角色判断
+      if (role === 'RUNNER' && hasRunnerProfile) {
+        return NextResponse.json(
+          { error: '该账号已经是跑手，请直接登录' },
+          { status: 409 }
+        );
+      }
+
+      if (role === 'BOSS' && isBoss) {
+        return NextResponse.json(
+          { error: '该账号已经是老板，请直接登录' },
+          { status: 409 }
+        );
+      }
+
+      // 可以绑定新角色
+      return NextResponse.json({
+        success: false,
+        code: 'ROLE_BIND_REQUIRED',
+        message: '该手机号已注册，是否绑定新角色？',
+        existingRoles: {
+          isBoss,
+          isRunner: hasRunnerProfile,
+        },
+        requestedRole: role,
+        user: {
+          id: existingUser.id,
+          phone: existingUser.phone,
+          role: existingUser.role,
+        },
+      }, { status: 200 });
     }
 
     // 加密密码
