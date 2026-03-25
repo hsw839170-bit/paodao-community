@@ -161,6 +161,9 @@ export default async function Home({
               <a href="/register" className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full font-semibold text-lg shadow-xl shadow-blue-600/30 transition hover:scale-105 hover:shadow-2xl">
                 立即入驻 🚀
               </a>
+              <a href="/create-order" className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full font-semibold text-lg shadow-xl shadow-green-500/30 transition hover:scale-105 hover:shadow-2xl">
+                发布订单 ✨
+              </a>
               <a href="/public-orders" className="px-8 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full font-semibold text-lg shadow-xl shadow-orange-500/30 transition hover:scale-105 hover:shadow-2xl">
                 抢单大厅 ⚡
               </a>
