@@ -125,16 +125,25 @@ export default async function Home({
         
         <div className="container mx-auto px-4 py-16 relative">
           {/* 导航栏 */}
-          <nav className="flex justify-center gap-4 mb-12">
-            <a href="/" className="px-6 py-2.5 bg-blue-600 rounded-full text-white font-medium shadow-lg shadow-blue-600/30 transition hover:scale-105">
-              首页
+          <nav className="flex items-center justify-between gap-2 mb-12">
+            {/* Logo */}
+            <a href="/" className="flex items-center gap-2 text-white font-bold text-lg shrink-0">
+              <span className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-sm">D</span>
+              <span className="hidden sm:inline">DeltaRun</span>
             </a>
-            <a href="/leaderboard" className="px-6 py-2.5 bg-slate-700/80 backdrop-blur rounded-full text-white font-medium hover:bg-slate-600 transition hover:scale-105">
-              排行榜
-            </a>
-            <a href="/profile" className="px-6 py-2.5 bg-slate-700/80 backdrop-blur rounded-full text-white font-medium hover:bg-slate-600 transition hover:scale-105">
-              个人中心
-            </a>
+
+            {/* 导航项 */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              <a href="/" className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-blue-600 text-white transition whitespace-nowrap">
+                首页
+              </a>
+              <a href="/leaderboard" className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white transition whitespace-nowrap">
+                排行榜
+              </a>
+              <a href="/profile" className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white transition whitespace-nowrap">
+                个人中心
+              </a>
+            </div>
           </nav>
 
           {/* Hero Content */}
