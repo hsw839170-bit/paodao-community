@@ -22,6 +22,40 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { nickname, avatar, phone, platform, bio, pricePer10M, status } = body;
 
+    // 验证头像 URL 格式（如果提供）
+    if (avatar) {
+      try {
+        new URL(avatar);
+      } catch {
+        return NextResponse.json(
+          { error: '头像 URL 格式不正确' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 验证价格范围（如果提供）
+    if (pricePer10M) {
+      const price = parseInt(pricePer10M);
+      if (isNaN(price) || price < 1 || price > 10000) {
+        return NextResponse.json(
+          { error: '价格必须在 1-10000 元之间' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 验证手机号格式（如果提供）
+    if (phone) {
+      const phoneRegex = /^1[3-9]\d{9}$/;
+      if (!phoneRegex.test(phone)) {
+        return NextResponse.json(
+          { error: '请输入正确的手机号格式' },
+          { status: 400 }
+        );
+      }
+    }
+
     // 更新跑手资料
     const updatedProfile = await prisma.runnerProfile.update({
       where: { userId: payload.userId },

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Avatar from './Avatar'
 
 interface Runner {
   id: string
@@ -12,7 +13,7 @@ interface Runner {
   orders: number
   income: number
   verified: boolean
-  computedStatus: 'ONLINE' | 'OFFLINE' | 'BUSY' // 使用计算后的状态
+  computedStatus: 'ONLINE' | 'OFFLINE' | 'BUSY'
   pricePer10M: number
 }
 
@@ -45,9 +46,11 @@ export function RunnerCard({ runner }: { runner: Runner }) {
       <div className="flex items-start gap-5">
         {/* 头像 */}
         <div className="relative">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-3xl font-bold text-white shadow-lg">
-            {runner.name[0]}
-          </div>
+          <Avatar 
+            src={runner.avatar} 
+            alt={runner.name}
+            size="xl"
+          />
           {runner.verified && (
             <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm border-4 border-slate-800">
               ✓

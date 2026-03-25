@@ -16,6 +16,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 校验手机号格式（中国大陆）
+    const phoneRegex = /^1[3-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return NextResponse.json(
+        { error: '请输入正确的手机号格式' },
+        { status: 400 }
+      );
+    }
+
+    // 校验密码长度
+    if (password.length < 6 || password.length > 32) {
+      return NextResponse.json(
+        { error: '密码长度必须在 6-32 位之间' },
+        { status: 400 }
+      );
+    }
+
     // 跑手需要额外字段
     if (role === 'RUNNER') {
       if (!nickname || !contactPhone || !platform || !pricePer10M) {

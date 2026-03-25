@@ -30,6 +30,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 验证金额范围
+    const orderAmount = parseInt(amount);
+    if (isNaN(orderAmount) || orderAmount < 1 || orderAmount > 100000) {
+      return NextResponse.json(
+        { error: '订单金额必须在 1-100000 元之间' },
+        { status: 400 }
+      );
+    }
+
+    // 验证备注长度
+    if (note && note.length > 500) {
+      return NextResponse.json(
+        { error: '备注长度不能超过 500 字符' },
+        { status: 400 }
+      );
+    }
+
     // 验证跑手存在且在线
     const runner = await prisma.runnerProfile.findUnique({
       where: { id: runnerId },
@@ -55,7 +72,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: payload.userId,      // 下单用户ID
         runnerId: runnerId,          // 跑手ID
-        amount: amount,              // 金额
+        amount: orderAmount,         // 金额
         gameAmount: gameAmount || null,  // 游戏币数量
         note: note || null,          // 备注
         status: 'PENDING',           // 初始状态：待接单
