@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/cron/check-expired-orders",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
