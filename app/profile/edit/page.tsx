@@ -9,6 +9,7 @@ interface RunnerProfile {
   nickname: string;
   avatar: string | null;
   phone: string;
+  wechat?: string | null;
   platform: string;
   bio: string | null;
   pricePer10M: number;
@@ -25,6 +26,7 @@ export default function EditProfilePage() {
     nickname: '',
     avatar: '',
     phone: '',
+    wechat: '',
     platform: 'BOTH',
     bio: '',
     pricePer10M: '',
@@ -68,6 +70,7 @@ export default function EditProfilePage() {
         nickname: data.profile.nickname || '',
         avatar: data.profile.avatar || '',
         phone: data.profile.phone || '',
+        wechat: data.profile.wechat || '',
         platform: data.profile.platform || 'BOTH',
         bio: data.profile.bio || '',
         pricePer10M: data.profile.pricePer10M?.toString() || '',
@@ -102,6 +105,7 @@ export default function EditProfilePage() {
         body: JSON.stringify({
           nickname: formData.nickname,
           phone: formData.phone,
+          wechat: formData.wechat,
           platform: formData.platform,
           bio: formData.bio,
           pricePer10M: formData.pricePer10M,
@@ -270,6 +274,20 @@ export default function EditProfilePage() {
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                微信号（选填）
+              </label>
+              <input
+                type="text"
+                value={formData.wechat}
+                onChange={(e) => setFormData({ ...formData, wechat: e.target.value })}
+                placeholder="选填，与手机号二选一"
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-500"
+              />
+              <p className="text-xs text-slate-500 mt-1">客户可通过手机号或微信联系您</p>
             </div>
 
             <div>

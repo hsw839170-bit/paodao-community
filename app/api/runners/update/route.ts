@@ -20,7 +20,7 @@ export async function PUT(request: NextRequest) {
 
     // 获取更新数据
     const body = await request.json();
-    const { nickname, avatar, phone, platform, bio, pricePer10M, status } = body;
+    const { nickname, avatar, phone, wechat, platform, bio, pricePer10M, status } = body;
 
     // 验证头像 URL 格式（如果提供）
     if (avatar) {
@@ -32,6 +32,14 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    // 验证微信号长度（如果提供）
+    if (wechat && wechat.length > 50) {
+      return NextResponse.json(
+        { error: '微信号长度不能超过 50 字符' },
+        { status: 400 }
+      );
     }
 
     // 验证价格范围（如果提供）
@@ -63,6 +71,7 @@ export async function PUT(request: NextRequest) {
         ...(nickname && { nickname }),
         ...(avatar !== undefined && { avatar }),
         ...(phone && { phone }),
+        ...(wechat !== undefined && { wechat }),
         ...(platform && { platform }),
         ...(bio !== undefined && { bio }),
         ...(pricePer10M && { pricePer10M: parseInt(pricePer10M) }),

@@ -45,6 +45,7 @@ model RunnerProfile {
   nickname    String     // 昵称
   avatar      String?    // 头像 URL
   phone       String     // 联系手机号（可与登录手机号不同）
+  wechat      String?    // 微信号（可选，与手机号二选一）
 
   // 业务信息
   platform    Platform   // PC | MOBILE | BOTH
