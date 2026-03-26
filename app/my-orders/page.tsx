@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { safeGetItem } from '@/lib/storage';
 
 interface Order {
   id: string;
@@ -62,12 +63,8 @@ export default function MyOrdersPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
 
-  useEffect(() => {
-    fetchOrders();
-  }, [filter]);
-
-  const fetchOrders = async () => {
-    const token = localStorage.getItem('token');
+  const fetchOrders = useCallback(async () => {
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -105,7 +102,19 @@ export default function MyOrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, router]);
+
+  // 初始加载 + 轮询
+  useEffect(() => {
+    fetchOrders();
+
+    // 设置轮询（30秒间隔）
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
 
   // 打开评价弹窗
   const openReviewModal = (order: Order) => {

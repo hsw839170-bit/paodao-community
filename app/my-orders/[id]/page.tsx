@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { safeGetItem } from '@/lib/storage';
 
 interface Order {
   id: string;
@@ -63,12 +64,8 @@ export default function OrderDetailPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [submittingCancel, setSubmittingCancel] = useState(false);
 
-  useEffect(() => {
-    fetchOrderDetail();
-  }, [orderId]);
-
-  const fetchOrderDetail = async () => {
-    const token = localStorage.getItem('token');
+  const fetchOrderDetail = useCallback(async () => {
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -134,7 +131,19 @@ export default function OrderDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId, router]);
+
+  // 初始加载 + 轮询
+  useEffect(() => {
+    fetchOrderDetail();
+
+    // 设置轮询（30秒间隔）
+    const interval = setInterval(() => {
+      fetchOrderDetail();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchOrderDetail]);
 
   // 提交评价
   const handleSubmitReview = async (e: React.FormEvent) => {

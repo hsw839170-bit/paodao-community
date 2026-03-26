@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import { 
@@ -12,6 +12,7 @@ import {
   Filter,
   ChevronDown
 } from 'lucide-react';
+import { safeGetItem } from '@/lib/storage';
 
 interface PublicOrder {
   id: string;
@@ -58,7 +59,7 @@ export default function PublicOrdersPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const fetchOrders = async (cursor?: string) => {
+  const fetchOrders = useCallback(async (cursor?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -72,7 +73,7 @@ export default function PublicOrdersPage() {
       params.set('limit', '20');
       if (cursor) params.set('cursor', cursor);
 
-      const token = localStorage.getItem('token');
+      const token = safeGetItem('token');
       const res = await fetch(`/api/orders/public?${params}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -96,7 +97,7 @@ export default function PublicOrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   const claimOrder = async (orderId: string) => {
     const token = localStorage.getItem('token');
@@ -152,7 +153,14 @@ export default function PublicOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-  }, [filters]);
+
+    // 设置轮询（30秒间隔）刷新订单列表
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white">
