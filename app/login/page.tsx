@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '@/lib/storage';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function LoginPage() {
 
   // 页面加载时检查是否有保存的用户名
   useEffect(() => {
-    const savedPhone = localStorage.getItem('savedPhone');
+    const savedPhone = safeGetItem('savedPhone');
     if (savedPhone) {
       setFormData(prev => ({ ...prev, phone: savedPhone }));
     }
@@ -47,14 +48,14 @@ export default function LoginPage() {
       }
 
       // 保存 token
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      safeSetItem('token', data.token);
+      safeSetItem('user', JSON.stringify(data.user));
       
       // 记住我：保存手机号方便下次登录
       if (formData.rememberMe) {
-        localStorage.setItem('savedPhone', formData.phone);
+        safeSetItem('savedPhone', formData.phone);
       } else {
-        localStorage.removeItem('savedPhone');
+        safeRemoveItem('savedPhone');
       }
 
       // 跳转到个人中心

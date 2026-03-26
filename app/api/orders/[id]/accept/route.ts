@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { createNotification } from '@/lib/notifications';
 
 export async function PUT(
   request: NextRequest,
@@ -100,6 +101,16 @@ export async function PUT(
 
       return updated;
     });
+
+    // 发送通知给老板（fire-and-forget，不影响主流程）
+    createNotification({
+      type: 'ORDER_ACCEPTED',
+      userId: updatedOrder.userId,
+      actorId: payload.userId,
+      orderId: params.id,
+      title: '跑手已接单',
+      message: `跑手 ${runner.nickname} 已接受您的订单，即将开始服务`,
+    }).catch(() => { /* 忽略通知失败 */ });
 
     return NextResponse.json({
       success: true,

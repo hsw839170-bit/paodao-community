@@ -1,5 +1,7 @@
 'use client';
 
+import { safeGetItem, safeSetItem, safeRemoveItem } from '@/lib/storage';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -41,7 +43,7 @@ export default function EditProfilePage() {
   }, []);
 
   const fetchProfile = async () => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -56,8 +58,8 @@ export default function EditProfilePage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          safeRemoveItem('token');
+          safeRemoveItem('user');
           router.push('/login');
           return;
         }
@@ -88,7 +90,7 @@ export default function EditProfilePage() {
     setError('');
     setSuccess('');
 
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -138,7 +140,7 @@ export default function EditProfilePage() {
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;

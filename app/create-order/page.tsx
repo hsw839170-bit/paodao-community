@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import CreateOrderForm from '@/app/components/CreateOrderForm'
+import RiskWarning from '@/app/components/RiskWarning'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,8 +37,11 @@ export default function CreateOrderPage() {
           <CreateOrderForm />
         </div>
 
+        {/* 风险提示 */}
+        <RiskWarning className="mt-6" />
+
         {/* Footer */}
-        <footer className="mt-12 text-center text-slate-500 text-sm">
+        <footer className="mt-8 text-center text-slate-500 text-sm">
           <p>发布即表示同意 <Link href="/legal/terms" className="text-blue-400 hover:underline">用户协议</Link></p>
         </footer>
       </div>

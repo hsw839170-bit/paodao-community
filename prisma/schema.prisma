@@ -204,7 +204,7 @@ model Notification {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  type      String   // ORDER_CLAIMED | ORDER_COMPLETED | ORDER_CANCELLED
+  type      String   // ORDER_CREATED | ORDER_CLAIMED | ORDER_ACCEPTED | ORDER_COMPLETED | ORDER_CANCELLED | PROGRESS_UPDATED
   title     String
   message   String
   orderId   String?
@@ -212,6 +212,8 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  @@index([userId])
-  @@index([read])
+  // 复合索引：查询用户的未读通知（按时间倒序）
+  @@index([userId, read, createdAt])
+  // 复合索引：查询用户的所有通知（按时间倒序）
+  @@index([userId, createdAt])
 }

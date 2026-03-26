@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { safeGetItem, safeRemoveItem } from '@/lib/storage';
 
 interface Order {
   id: string;
@@ -67,7 +68,7 @@ export default function MyOrdersPage() {
   }, [filter]);
 
   const fetchOrders = async () => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -89,8 +90,8 @@ export default function MyOrdersPage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          safeRemoveItem('token');
+          safeRemoveItem('user');
           router.push('/login');
           return;
         }
@@ -119,7 +120,7 @@ export default function MyOrdersPage() {
     e.preventDefault();
     if (!reviewOrder) return;
 
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -199,7 +200,7 @@ export default function MyOrdersPage() {
 
   // 获取订单日志
   const fetchOrderLogs = async (order: Order) => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) return;
 
     setLoadingLogs(true);

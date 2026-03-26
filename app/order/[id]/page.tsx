@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import OrderForm from './OrderForm'
+import RiskWarning from '@/app/components/RiskWarning'
 
 // 强制动态渲染，避免构建时静态生成
 export const dynamic = 'force-dynamic'
@@ -135,6 +136,9 @@ export default async function OrderPage({ params }: PageProps) {
           </div>
 
           <OrderForm runner={runner} />
+
+          {/* 风险提示 */}
+          <RiskWarning className="mt-6" />
         </div>
       </div>
     </main>

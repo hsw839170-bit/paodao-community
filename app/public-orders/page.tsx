@@ -1,5 +1,7 @@
 'use client';
 
+import { safeGetItem, safeSetItem, safeRemoveItem } from '@/lib/storage';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
@@ -72,7 +74,7 @@ export default function PublicOrdersPage() {
       params.set('limit', '20');
       if (cursor) params.set('cursor', cursor);
 
-      const token = localStorage.getItem('token');
+      const token = safeGetItem('token');
       const res = await fetch(`/api/orders/public?${params}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -99,7 +101,7 @@ export default function PublicOrdersPage() {
   };
 
   const claimOrder = async (orderId: string) => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       alert('请先登录');
       router.push('/login');

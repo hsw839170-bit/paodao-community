@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { safeGetItem } from '@/lib/storage'
 
 interface CreateOrderFormProps {
   runnerId?: string;
@@ -48,7 +49,7 @@ export default function CreateOrderForm({
     setError('')
 
     try {
-      const token = localStorage.getItem('token')
+      const token = safeGetItem('token')
       if (!token) {
         router.push('/login')
         return

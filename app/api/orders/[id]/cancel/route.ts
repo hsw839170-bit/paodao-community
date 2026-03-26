@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { createNotification } from '@/lib/notifications';
 
 /**
  * PUT /api/orders/[id]/cancel
@@ -83,6 +84,29 @@ export async function PUT(
 
       return updated;
     });
+
+    // 发送通知给对方（fire-and-forget，不影响主流程）
+    if (isOwner && order.runner) {
+      // 老板取消 → 通知跑手
+      createNotification({
+        type: 'ORDER_CANCELLED',
+        userId: order.runner.userId,
+        actorId: payload.userId,
+        orderId: params.id,
+        title: '订单已取消',
+        message: `老板取消了订单，原因：${reason || '无'}`,
+      }).catch(() => { /* 忽略通知失败 */ });
+    } else if (!isOwner) {
+      // 跑手取消 → 通知老板
+      createNotification({
+        type: 'ORDER_CANCELLED',
+        userId: order.user.id,
+        actorId: payload.userId,
+        orderId: params.id,
+        title: '订单已取消',
+        message: `跑手取消了订单，原因：${reason || '无'}`,
+      }).catch(() => { /* 忽略通知失败 */ });
+    }
 
     return NextResponse.json({
       success: true,

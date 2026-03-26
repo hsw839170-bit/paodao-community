@@ -1,5 +1,7 @@
 'use client';
 
+import { safeGetItem, safeSetItem, safeRemoveItem } from '@/lib/storage';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -68,7 +70,7 @@ export default function OrderDetailPage() {
   }, [orderId]);
 
   const fetchOrderDetail = async () => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -141,7 +143,7 @@ export default function OrderDetailPage() {
     e.preventDefault();
     if (!order) return;
 
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -179,7 +181,7 @@ export default function OrderDetailPage() {
   const handleCancelOrder = async () => {
     if (!order) return;
 
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;

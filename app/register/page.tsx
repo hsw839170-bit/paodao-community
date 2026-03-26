@@ -1,5 +1,7 @@
 'use client';
 
+import { safeGetItem, safeSetItem, safeRemoveItem } from '@/lib/storage';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -99,8 +101,8 @@ export default function RegisterPage() {
       }
 
       // 保存 token
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      safeSetItem('token', data.token);
+      safeSetItem('user', JSON.stringify(data.user));
 
       // 根据角色跳转
       if (isRunner) {
@@ -174,8 +176,8 @@ export default function RegisterPage() {
       }
 
       // 3. 保存 token 并跳转
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(loginData.user));
+      safeSetItem('token', token);
+      safeSetItem('user', JSON.stringify(loginData.user));
 
       if (isRunner) {
         router.push('/profile');

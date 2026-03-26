@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { calculatePrice } from '@/data/runners'
+import { safeGetItem } from '@/lib/storage'
 
 interface Runner {
   id: string
@@ -42,7 +43,7 @@ export default function OrderForm({ runner }: { runner: Runner }) {
     setError('')
 
     try {
-      const token = localStorage.getItem('token')
+      const token = safeGetItem('token')
       if (!token) {
         router.push('/login')
         return

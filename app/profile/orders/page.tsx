@@ -1,5 +1,7 @@
 'use client';
 
+import { safeGetItem, safeSetItem, safeRemoveItem } from '@/lib/storage';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -83,7 +85,7 @@ export default function MyOrdersPage() {
   }, [filter]);
 
   const fetchOrders = async () => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -105,8 +107,8 @@ export default function MyOrdersPage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          safeRemoveItem('token');
+          safeRemoveItem('user');
           router.push('/login');
           return;
         }
@@ -129,7 +131,7 @@ export default function MyOrdersPage() {
 
   // 接单
   const handleAccept = async (orderId: string) => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -162,7 +164,7 @@ export default function MyOrdersPage() {
 
   // 完成订单
   const handleComplete = async (orderId: string) => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -205,7 +207,7 @@ export default function MyOrdersPage() {
     e.preventDefault();
     if (!reviewOrder) return;
 
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -252,7 +254,7 @@ export default function MyOrdersPage() {
     e.preventDefault();
     if (!progressOrder) return;
 
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -289,7 +291,7 @@ export default function MyOrdersPage() {
 
   // 获取订单日志
   const fetchOrderLogs = async (order: Order) => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) return;
 
     setLoadingLogs(true);

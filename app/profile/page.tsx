@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '@/lib/storage';
 
 interface RunnerProfile {
   id: string;
@@ -41,7 +42,7 @@ export default function ProfilePage() {
   const [optimisticStatus, setOptimisticStatus] = useState<'ONLINE' | 'OFFLINE' | 'BUSY' | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -58,8 +59,8 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          safeRemoveItem('token');
+          safeRemoveItem('user');
           router.push('/login');
           return;
         }
@@ -70,7 +71,7 @@ export default function ProfilePage() {
       setUser(data.user);
       
       // 更新 localStorage 中的用户信息
-      localStorage.setItem('user', JSON.stringify(data.user));
+      safeSetItem('user', JSON.stringify(data.user));
     } catch (err) {
       console.error('获取用户信息失败:', err);
     } finally {
@@ -82,7 +83,7 @@ export default function ProfilePage() {
   const switchRole = async (targetRole: 'BOSS' | 'RUNNER') => {
     if (!user || switchingRole || user.activeRole === targetRole) return;
 
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -111,8 +112,8 @@ export default function ProfilePage() {
       }
 
       // 更新 token 和用户信息
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      safeSetItem('token', data.token);
+      safeSetItem('user', JSON.stringify(data.user));
       
       // 刷新页面以应用新身份
       window.location.reload();
@@ -134,7 +135,7 @@ export default function ProfilePage() {
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = safeGetItem('token');
     if (!token) {
       router.push('/login');
       return;
@@ -175,8 +176,8 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    safeRemoveItem('token');
+    safeRemoveItem('user');
     router.push('/login');
   };
 

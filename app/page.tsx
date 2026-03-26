@@ -143,6 +143,9 @@ export default async function Home({
               <a href="/profile" className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white transition whitespace-nowrap">
                 个人中心
               </a>
+              <a href="/boss" className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition whitespace-nowrap">
+                我是老板
+              </a>
             </div>
           </nav>
 

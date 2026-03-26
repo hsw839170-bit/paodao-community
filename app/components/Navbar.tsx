@@ -2,6 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import NotificationBell from './NotificationBell';
+import { safeGetItem } from '@/lib/storage';
 
 interface NavbarProps {
   isRunnerMode?: boolean;
@@ -9,6 +12,13 @@ interface NavbarProps {
 
 export default function Navbar({ isRunnerMode = false }: NavbarProps) {
   const pathname = usePathname();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // 检查登录状态
+    const token = safeGetItem('token');
+    setIsLoggedIn(!!token);
+  }, []);
 
   const navItems = [
     { href: '/', label: '首页', active: pathname === '/' },
@@ -42,10 +52,17 @@ export default function Navbar({ isRunnerMode = false }: NavbarProps) {
           </Link>
         ))}
         
+        {/* 通知铃铛 - 仅在登录状态显示 */}
+        {isLoggedIn && (
+          <div className="hidden sm:block">
+            <NotificationBell />
+          </div>
+        )}
+        
         {/* 我是老板 / 我要入驻 */}
         {isRunnerMode ? (
           <Link
-            href="/my-orders"
+            href="/boss"
             className="px-3 sm:px-4 py-2 rounded-full text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition whitespace-nowrap"
           >
             我是老板

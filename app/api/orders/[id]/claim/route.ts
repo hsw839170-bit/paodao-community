@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
 import { acquireLock, releaseLock } from '@/lib/redis-lock';
+import { createNotification } from '@/lib/notifications';
 
 /**
  * PUT /api/orders/[id]/claim
@@ -149,8 +150,15 @@ export async function PUT(
         },
       });
 
-      // TODO: 发送通知给下单用户（WebSocket 或短信）
-      // await notifyUser(order.userId, `您的订单已被 ${runner.nickname} 接单`);
+      // 发送通知给老板（fire-and-forget，不影响主流程）
+      createNotification({
+        type: 'ORDER_CLAIMED',
+        userId: updatedOrder.userId,
+        actorId: payload.userId,
+        orderId: orderId,
+        title: '订单已被抢单',
+        message: `跑手 ${runner.nickname} 抢到了您的订单，即将开始服务`,
+      }).catch(() => { /* 忽略通知失败 */ });
 
       return NextResponse.json({
         success: true,
